@@ -3333,13 +3333,75 @@ public class BootImageWriter {
     return null;
   }
 
+  private static void mapPrintLines(PrintStream out, int jtocSlot, Offset jtocOff, String pad, CompiledMethod cm) {
+    String details;
+    String contents = Services.addressAsHexString(getReferenceAddr(jtocOff, false)) + pad;
+    String category = "lines        ";
+
+    out.println((jtocSlot + "        ").substring(0,8) +
+    		Services.addressAsHexString(jtocOff.toWord().toAddress()) + " " +
+        "methodsz     " + "  " + contents + "  " + cm.numberOfInstructions());
+
+    // Permcheck: print line numbers in map:
+    int prev_line = -1;
+    int curr_line;
+    Offset instrOffset = Offset.zero().plus(1);
+    while (instrOffset.toInt() <= cm.numberOfInstructions()) {
+      curr_line = cm.findLineNumberForInstruction(instrOffset);
+      instrOffset = instrOffset.plus(1);
+      if (curr_line == 0 || curr_line == prev_line) continue;
+
+      prev_line = curr_line;
+      //details = m.getMethod().toString();
+      //details += " (line=";
+      //details += String.valueOf(curr_line);
+      //details += ")";
+      details = String.valueOf(curr_line);
+
+      contents = Services.addressAsHexString(getReferenceAddr(jtocOff, false).plus(instrOffset.toInt() - 2)) + pad;
+
+      out.println((jtocSlot + "        ").substring(0,8) +
+    		  Services.addressAsHexString(jtocOff.toWord().toAddress()) + " " +
+                  category + "  " + contents + "  " + details);
+    }
+  }
+  private static void mapPrintLines(PrintStream out, String prefix, Address code, CompiledMethod cm) {
+    String details;
+    String category =    "lines    ";
+    out.println(prefix + "methodsz " + Services.addressAsHexString(code) + "          " + cm.numberOfInstructions());
+    // Permcheck: print line numbers in map:
+    int curr_line;
+    Offset instrMaxOffset; // determine byte size of each line number chunk of code
+    Offset instrOffset = Offset.zero().plus(1);
+    int prev_line = cm.findLineNumberForInstruction(instrOffset);
+    while (instrOffset.toInt() <= cm.numberOfInstructions()) {
+      curr_line = cm.findLineNumberForInstruction(instrOffset);
+      prev_line = curr_line;
+      instrMaxOffset = instrOffset;
+      while (curr_line == prev_line && instrMaxOffset.toInt() <= cm.numberOfInstructions()) {
+        instrMaxOffset = instrMaxOffset.plus(1);
+        curr_line = cm.findLineNumberForInstruction(instrMaxOffset);
+      }
+
+      details = String.valueOf(prev_line) + "," + String.valueOf(instrMaxOffset.minus(instrOffset).toInt());
+
+      out.println(prefix + category +
+    		  Services.addressAsHexString(code.plus(instrOffset).minus(1)) // cm.getInstructionAddress(instrOffset.minus(2)))
+                  + "          " + details);
+      instrOffset = instrMaxOffset;
+    }
+  }
+
   /**
    * Write method address map for use with dbx debugger.
    *
    * @param fileName name of file to write the map to
    */
   private static void writeAddressMap(String mapFileName) throws IOException {
-    if (verbosity.isAtLeast(SUMMARY)) say("writing ", mapFileName);
+    if (verbosity.isAtLeast(SUMMARY)) {
+    	say("writing ", mapFileName);
+    	say("writing ", mapFileName + ".perm");
+    }
 
     // Restore previously unnecessary Statics data structures
     Statics.bootImageReportGeneration(staticsJunk);
@@ -3348,6 +3410,10 @@ public class BootImageWriter {
     FileOutputStream fos = new FileOutputStream(mapFileName);
     BufferedOutputStream bos = new BufferedOutputStream(fos, 128);
     PrintStream out = new PrintStream(bos, false);
+    
+    FileOutputStream fos_perm = new FileOutputStream(mapFileName + ".perm");
+    BufferedOutputStream bos_perm = new BufferedOutputStream(fos_perm, 128);
+    PrintStream out_perm = new PrintStream(bos_perm, false);
 
     out.println("#! /bin/bash");
     out.println("# This is a method address map, for use with the ``dbx'' debugger.");
@@ -3516,6 +3582,7 @@ public class BootImageWriter {
         } else {
           CompiledMethod m = findMethodOfCode(obj);
           if (m != null) {
+            mapPrintLines(out, jtocSlot, jtocOff, pad, m);
             category = "code         ";
             details = m.getMethod().toString();
           } else if (obj != null) {
@@ -3543,6 +3610,7 @@ public class BootImageWriter {
         if (m != null && compiledMethod.isCompiled()) {
           CodeArray instructions = compiledMethod.getEntryCodeArray();
           Address code = BootImageMap.getImageAddress(instructions.getBacking(), true);
+          mapPrintLines(out, ".     .          ", code, compiledMethod);
           out.println(".     .          code     " + Services.addressAsHexString(code) +
                       "          " + compiledMethod.getMethod());
         }

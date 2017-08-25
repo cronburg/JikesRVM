@@ -1930,6 +1930,9 @@ const char *rvm_target_configuration = "${target.file}";
     <CompileCtoObj cfile="${bl.dir}/sysMemory.c"
                    objfile="${build.base}/${target.obj-prefix}sysMemory${target.obj-ext}"
                    cargs="${rvm.c.args}"/>
+    <CompileCtoObj cfile="${bl.dir}/sysPermcheck.c"
+                   objfile="${build.base}/${target.obj-prefix}sysPermcheck${target.obj-ext}"
+                   cargs="${rvm.c.args}"/>
     <CompileCtoObj cfile="${bl.dir}/sysMisc.c"
                    objfile="${build.base}/${target.obj-prefix}sysMisc${target.obj-ext}"
                    cargs="${rvm.c.args}"/>
@@ -1965,6 +1968,7 @@ const char *rvm_target_configuration = "${target.file}";
         <arg value="${build.base}/${target.obj-prefix}sysLibrary${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMath${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMemory${target.obj-ext}"/>
+        <arg value="${build.base}/${target.obj-prefix}sysPermcheck${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMisc${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysPerfEvent${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysSignal${target.obj-ext}"/>
@@ -2019,6 +2023,7 @@ const char *rvm_target_configuration = "${target.file}";
         <arg value="${build.base}/${target.obj-prefix}sysLibrary${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMath${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMemory${target.obj-ext}"/>
+        <arg value="${build.base}/${target.obj-prefix}sysPermcheck${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysMisc${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysPerfEvent${target.obj-ext}"/>
         <arg value="${build.base}/${target.obj-prefix}sysSignal${target.obj-ext}"/>
@@ -2058,7 +2063,7 @@ const char *rvm_target_configuration = "${target.file}";
 
   <target name="build-debug-symbols" if="rvm.debug-symbols">
     <exec executable="${perl.exe}" failonerror="true">
-      <arg path="${bl.dir}/parse_map.perl"/>
+      <arg path="${bl.dir}/parse_map.py"/>
       <arg path="${build.base}/RVM.map"/>
       <arg path="${build.base}/JikesRVM-symbols.s"/>
     </exec>

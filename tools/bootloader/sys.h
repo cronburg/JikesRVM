@@ -324,6 +324,18 @@ EXTERNAL jlong sysVaArgJlong(va_list *ap);
 EXTERNAL jfloat sysVaArgJfloat(va_list *ap);
 EXTERNAL jdouble sysVaArgJdouble(va_list *ap);
 EXTERNAL jobject sysVaArgJobject(va_list *ap);
+// sysPermcheck
+EXTERNAL void sysPermcheckInitializeMap(int shadowMapID);
+EXTERNAL void sysPermcheckDestroyMap(int shadowMapID);
+EXTERNAL int  sysPermcheckGetBit(int shadowMapID, Address a, int offset);
+EXTERNAL void sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset);
+EXTERNAL void sysPermcheckMarkBit(int shadowMapID, Address a, int offset);
+EXTERNAL void sysPermcheckSetBits(int shadowMapID, Address a, char mbits);
+EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a);
+EXTERNAL void sysPermcheckRegisterFunction(Address start, int size, char* descriptor, int descr_length);
+EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz);
+EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
+                                      int descr_length, int* line_numbers, int line_numbers_length);
 
 /** Only called externally from Java programs. */
 EXTERNAL void sysExit(int) NORETURN;

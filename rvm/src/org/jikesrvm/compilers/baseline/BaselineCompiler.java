@@ -218,6 +218,57 @@ public abstract class BaselineCompiler extends TemplateCompilerFramework {
     BaselineCompiledMethod cm =
         (BaselineCompiledMethod) CompiledMethods.createCompiledMethod(method, CompiledMethod.BASELINE);
     cm.compile();
+
+    if (VM.fullyBooted) {
+      byte[] b1 = method.getDeclaringClass().getClassLoader().toString().getBytes();
+      byte[] b2 = method.getDeclaringClass().getDescriptor().getBytes();
+      byte[] b3 = method.getName().getBytes();
+      byte[] b = new byte[b1.length + b2.length + b3.length + 2];
+      System.arraycopy(b1, 0, b, 0, b1.length);
+      b[b1.length] = ' ';
+      System.arraycopy(b2, 0, b, b1.length + 1, b2.length);
+      b[b1.length + b2.length + 1] = ' ';
+      System.arraycopy(b3, 0, b, b1.length + b2.length + 2, b3.length);
+
+      int[] lineNumberMap = new int[2 * (cm.numberOfInstructions() + 1)]; // MemoryManager.newContiguousIntArray(2 * cm.numberOfInstructions() + 1);
+      Offset instrOffset = Offset.zero(); // current instruction offset to query for line number information (plus one, because logic)
+      Offset baseOffset = Offset.zero(); // lowest offset of the current contiguous region of code corresponding to a single source line of code
+      int count = 0; // number of distinct contiguous line numbers seen so far
+      int curr_line = 0; // line number of instruction at instrOffset
+      int base_line = 0; // line number of instruction at baseOffset
+      //VM.sysWrite(method.getDeclaringClass().getDescriptor());
+      //VM.sysWrite(" - "); VM.sysWriteln(method.getName());
+      while (instrOffset.toInt() < cm.numberOfInstructions()) {
+        curr_line = cm.findLineNumberForInstruction(instrOffset.plus(1));
+        if (curr_line == base_line) {
+          instrOffset = instrOffset.plus(1);
+          continue;
+        }
+        lineNumberMap[2 * count] = base_line;
+        lineNumberMap[2 * count + 1] = instrOffset.minus(baseOffset).toInt();
+
+        //VM.sysWrite(base_line); VM.sysWrite(", "); VM.sysWrite(lineNumberMap[2 * count + 1]); VM.sysWriteln();
+        //VM.sysWrite("  "); VM.sysWrite(baseOffset); VM.sysWrite(", "); VM.sysWriteln(instrOffset);
+
+
+        base_line = curr_line;
+        count++;
+        baseOffset = instrOffset;
+        instrOffset = instrOffset.plus(1);
+      }
+
+      int[] lm_dest = new int[2 * count];
+      System.arraycopy(lineNumberMap, 0, lm_dest, 0, 2 * count);
+
+      org.jikesrvm.runtime.Memory.PermcheckNewFunction(
+          cm.getInstructionAddress(Offset.zero()),
+          cm.getEntryCodeArray().length(),
+          b,
+          lm_dest,
+          count);
+
+    }
+
     return cm;
   }
 

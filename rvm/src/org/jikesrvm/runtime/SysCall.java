@@ -379,6 +379,26 @@ public abstract class SysCall {
   @SysCallTemplate
   public abstract int sysVaArgJobject(Address va_list);
 
+  /*  
+   * Permcheck client requests
+   */
+  @SysCallTemplate
+  public abstract void sysPermcheckInitializeMap (int shadowMapID);
+  @SysCallTemplate
+  public abstract void sysPermcheckDestroyMap    (int shadowMapID);
+  @SysCallTemplate
+  public abstract int  sysPermcheckGetBit        (int shadowMapID, Address a, int offset);
+  @SysCallTemplate
+  public abstract void sysPermcheckUnmarkBit     (int shadowMapID, Address a, int offset);
+  @SysCallTemplate
+  public abstract void sysPermcheckMarkBit       (int shadowMapID, Address a, int offset);
+  @SysCallTemplate
+  public abstract void sysPermcheckSetBits       (int shadowMapID, Address a, byte mbits);
+  @SysCallTemplate
+  public abstract byte sysPermcheckGetBits       (int shadowMapID, Address a); 
+  @SysCallTemplate
+	public abstract void sysPermcheckNewFunction(Address start, int size, byte[] descriptor, int descr_length, int[] line_numbers, int line_numbers_length);
+
   // system calls for alignment checking
   @SysCallTemplate
   public abstract void sysEnableAlignmentChecking();

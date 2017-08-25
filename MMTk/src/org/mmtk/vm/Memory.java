@@ -136,6 +136,18 @@ import org.vmmagic.pragma.*;
   @Inline
   public abstract void isync();
 
+  /**
+   * DBI interfaces between raw client requests and MMTk users
+   **/
+  public abstract void    PermcheckInitializeMap (int shadowMapID);
+  public abstract void    PermcheckDestroyMap    (int shadowMapID);
+  public abstract boolean PermcheckGetBit    (int shadowMapID, Address a, int offset);
+  public abstract void    PermcheckUnmarkBit (int shadowMapID, Address a, int offset);
+  public abstract void    PermcheckMarkBit   (int shadowMapID, Address a, int offset);
+  public abstract void    PermcheckSetBits   (int shadowMapID, Address a, byte mbits);
+  public abstract byte    PermcheckGetBits   (int shadowMapID, Address a); 
+  public abstract void    PermcheckSetBytes  (int shadowMapID, Address start, int size, byte mbits);
+
   /*
    * NOTE: The following methods must be implemented by subclasses of this
    * class, but are internal to the VM<->MM interface glue, so are never

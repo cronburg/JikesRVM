@@ -23,6 +23,7 @@ import org.mmtk.utility.Conversions;
 import org.mmtk.utility.Memory;
 
 import org.mmtk.vm.Lock;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -522,6 +523,12 @@ public abstract class SegregatedFreeListSpace extends Space {
     }
   }
 
+  @Inline
+  private final void freeBlock(Address block) {
+    BlockAllocator.setNext(block, Address.zero());
+    BlockAllocator.free(this, block);
+  }
+
   /**
    * Sweeps a block, freeing it and adding to the list given by availableHead
    * if it contains no free objects.
@@ -536,9 +543,10 @@ public abstract class SegregatedFreeListSpace extends Space {
   protected final Address sweepBlock(Address block, int sizeClass, Extent blockSize, Address availableHead, boolean clearMarks) {
     boolean liveBlock = containsLiveCell(block, blockSize, clearMarks);
     if (!liveBlock) {
-      BlockAllocator.setNext(block, Address.zero());
-      BlockAllocator.free(this, block);
-    } else {
+    	Address cursor = block.plus(blockHeaderSize[sizeClass]);
+		  Permcheck.UnmarkData(cursor, blockSize.minus(blockHeaderSize[sizeClass]).toInt(), Permcheck.CELL_LEVEL);
+      freeBlock(block);
+		} else {
       BlockAllocator.setNext(block, availableHead);
       availableHead = block;
       if (!LAZY_SWEEP) {
@@ -667,6 +675,7 @@ public abstract class SegregatedFreeListSpace extends Space {
           lastFree.store(cursor);
         }
         Memory.zeroSmall(cursor, cellExtent);
+        Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.CELL_LEVEL);
         lastFree = cursor;
       }
       cursor = cursor.plus(cellExtent);
@@ -716,8 +725,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   private Address sweepCells(Sweeper sweeper, Address block, int sizeClass, Address availableHead) {
     boolean liveBlock = sweepCells(sweeper, block, sizeClass);
     if (!liveBlock) {
-      BlockAllocator.setNext(block, Address.zero());
-      BlockAllocator.free(this, block);
+      freeBlock(block);
     } else {
       BlockAllocator.setNext(block, availableHead);
       availableHead = block;
@@ -739,8 +747,7 @@ public abstract class SegregatedFreeListSpace extends Space {
       while (!(block = getSweepBlock(sizeClass)).isZero()) {
         boolean liveBlock = sweepCells(sweeper, block, sizeClass);
         if (!liveBlock) {
-          BlockAllocator.setNext(block, Address.zero());
-          BlockAllocator.free(this, block);
+          freeBlock(block);
         } else {
           lock.acquire();
           BlockAllocator.setNext(block, availableBlockHead.get(sizeClass));
@@ -922,6 +929,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void clearLiveBit(Address address) {
     updateLiveBit(address, false, true);
+    Permcheck.freeCell(address);
   }
 
   /**
@@ -942,6 +950,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void unsyncClearLiveBit(Address address) {
     updateLiveBit(address, false, false);
+    Permcheck.freeCell(address);
   }
 
   /**

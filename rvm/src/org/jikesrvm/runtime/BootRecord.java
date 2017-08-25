@@ -251,6 +251,16 @@ public class BootRecord {
   public Address sysZeroPagesIP;
   public Address sysSyncCacheIP;
 
+  // Permcheck
+  public Address sysPermcheckInitializeMapIP;
+  public Address sysPermcheckDestroyMapIP;
+  public Address sysPermcheckGetBitIP;
+  public Address sysPermcheckUnmarkBitIP;
+  public Address sysPermcheckMarkBitIP;
+  public Address sysPermcheckSetBitsIP;
+  public Address sysPermcheckGetBitsIP;
+  public Address sysPermcheckNewFunctionIP;
+
   // files
   public Address sysReadByteIP;
   public Address sysWriteByteIP;

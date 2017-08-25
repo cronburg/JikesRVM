@@ -212,4 +212,31 @@ import org.vmmagic.unboxed.Offset;
   public final void isync() {
     Magic.isync();
   }
+
+                                                                                                                              
+  public final void    PermcheckInitializeMap (int shadowMapID) {                                                             
+    org.jikesrvm.runtime.Memory.PermcheckInitializeMap(shadowMapID);                                                          
+  }                                                                                                                  
+  public final void    PermcheckDestroyMap    (int shadowMapID) {                                                             
+    org.jikesrvm.runtime.Memory.PermcheckDestroyMap(shadowMapID);                                                             
+  }                                                                                                                           
+  public final boolean PermcheckGetBit    (int shadowMapID, Address a, int offset) {                                          
+    return org.jikesrvm.runtime.Memory.PermcheckGetBit(shadowMapID, a, offset);                                               
+  }                                                                                          
+  public final void    PermcheckUnmarkBit (int shadowMapID, Address a, int offset) {                                          
+    org.jikesrvm.runtime.Memory.PermcheckUnmarkBit(shadowMapID, a, offset);                                                   
+  }                                                                                                                           
+  public final void    PermcheckMarkBit   (int shadowMapID, Address a, int offset) {                                          
+    org.jikesrvm.runtime.Memory.PermcheckMarkBit(shadowMapID, a, offset);                                                     
+  }                                                           
+  public final void    PermcheckSetBits   (int shadowMapID, Address a, byte mbits) {                                          
+    org.jikesrvm.runtime.Memory.PermcheckSetBits(shadowMapID, a, mbits);                                                      
+  }                                                                            
+  public final byte    PermcheckGetBits   (int shadowMapID, Address a) {                                                      
+    return org.jikesrvm.runtime.Memory.PermcheckGetBits(shadowMapID, a);                                                      
+  }                                                                                                                           
+  public final void PermcheckSetBytes(int shadowMapID, Address start, int size, byte mbits) {                                 
+    org.jikesrvm.runtime.Memory.PermcheckSetBytes(shadowMapID, start, size, mbits);                                           
+  }                                                                             
+
 }
