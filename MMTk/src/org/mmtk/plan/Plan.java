@@ -543,7 +543,6 @@ public abstract class Plan {
 
   private static boolean initialized = false;
 
-  @Entrypoint
   private static int gcStatus = NOT_IN_GC; // shared variable
 
   /** @return Is the memory management system initialized? */
@@ -594,9 +593,9 @@ public abstract class Plan {
         VM.activePlan.global().printPreStats();
       }
     }
-    VM.memory.isync();
+    VM.memory.combinedLoadBarriers();
     gcStatus = s;
-    VM.memory.sync();
+    VM.memory.fence();
     if (gcStatus == NOT_IN_GC) {
       /* From any phase to NOT_IN_GC */
       if (Stats.gatheringStats()) {

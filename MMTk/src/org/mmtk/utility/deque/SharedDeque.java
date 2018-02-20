@@ -339,7 +339,7 @@ public class SharedDeque extends Deque {
       long endCycles = startCycles + ((long) 1e9); // a few hundred milliseconds more or less.
       long nowCycles;
       do {
-        VM.memory.isync();
+        VM.memory.combinedLoadBarriers();
         Address rtn = ((fromTail) ? tail : head);
         if (!rtn.isZero() || complete()) return;
         nowCycles = VM.statistics.cycles();
@@ -496,12 +496,12 @@ public class SharedDeque extends Deque {
   @Inline
   private void setHead(Address newHead) {
     head = newHead;
-    VM.memory.sync();
+    VM.memory.fence();
   }
 
   @Inline
   private void setTail(Address newTail) {
     tail = newTail;
-    VM.memory.sync();
+    VM.memory.fence();
   }
 }

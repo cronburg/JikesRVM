@@ -203,14 +203,14 @@ import org.vmmagic.unboxed.Offset;
 
   @Override
   @Inline
-  public final void sync() {
-    Magic.sync();
+  public final void fence() {
+    Magic.fence();
   }
 
   @Override
   @Inline
-  public final void isync() {
-    Magic.isync();
+  public final void combinedLoadBarriers() {
+    Magic.combinedLoadBarrier();
   }
 
                                                                                                                               

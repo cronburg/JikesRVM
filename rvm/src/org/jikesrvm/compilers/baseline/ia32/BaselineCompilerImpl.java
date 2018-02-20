@@ -2333,8 +2333,16 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
     } else { // field is two words (double or long)
       if (VM.VerifyAssertions) VM._assert(fieldRef.getSize() == BYTES_IN_LONG);
       if (VM.BuildFor32Addr) {
-        asm.emitPUSH_RegDisp(T0, Magic.getTocPointer().toWord().toOffset().plus(WORDSIZE)); // get high part
-        asm.emitPUSH_RegDisp(T0, Magic.getTocPointer().toWord().toOffset());                // get low part
+        // JMM: field could be volatile so we need to guarantee atomic access
+        if (SSE2_BASE) {
+          asm.emitMOVQ_Reg_RegDisp(XMM0, T0, Magic.getTocPointer().toWord().toOffset());
+          adjustStack(-2 * WORDSIZE, false);
+          asm.emitMOVQ_RegInd_Reg(SP, XMM0);
+        } else {
+          asm.emitFLD_Reg_RegDisp_Quad(FP0, T0, Magic.getTocPointer().toWord().toOffset());
+          adjustStack(-2 * WORDSIZE, false);
+          asm.emitFSTP_RegInd_Reg_Quad(SP, FP0);
+        }
       } else {
         if (fieldRef.getNumberOfStackSlots() != 1) {
           adjustStack(-WORDSIZE, true);
@@ -2362,8 +2370,21 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
     } else { // field is two words (double or long)
       if (VM.VerifyAssertions) VM._assert(fieldRef.getSize() == BYTES_IN_LONG);
       if (VM.BuildFor32Addr) {
-        asm.emitPUSH_Abs(Magic.getTocPointer().plus(fieldOffset).plus(WORDSIZE)); // get high part
-        asm.emitPUSH_Abs(Magic.getTocPointer().plus(fieldOffset));                // get low part
+        // JMM: we need to guarantee atomic access for volatile fields
+        if (field.isVolatile()) {
+          if (SSE2_BASE) {
+            asm.emitMOVQ_Reg_Abs(XMM0, Magic.getTocPointer().plus(fieldOffset));
+            adjustStack(-2 * WORDSIZE, true);
+            asm.emitMOVQ_RegInd_Reg(SP, XMM0);
+          } else {
+            asm.emitFLD_Reg_Abs_Quad(FP0, Magic.getTocPointer().plus(fieldOffset));
+            adjustStack(-2 * WORDSIZE, true);
+            asm.emitFSTP_RegInd_Reg_Quad(SP, FP0);
+          }
+        } else {
+          asm.emitPUSH_Abs(Magic.getTocPointer().plus(fieldOffset).plus(WORDSIZE)); // get high part
+          asm.emitPUSH_Abs(Magic.getTocPointer().plus(fieldOffset));                // get low part
+        }
       } else {
         if (fieldRef.getNumberOfStackSlots() != 1) {
           adjustStack(-WORDSIZE, true);
@@ -2389,8 +2410,15 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
       } else { // field is two words (double or long)
         if (VM.VerifyAssertions) VM._assert(fieldRef.getSize() == BYTES_IN_LONG);
         if (VM.BuildFor32Addr) {
-          asm.emitPOP_RegDisp(T0, Magic.getTocPointer().toWord().toOffset());                // store low part
-          asm.emitPOP_RegDisp(T0, Magic.getTocPointer().toWord().toOffset().plus(WORDSIZE)); // store high part
+          // JMM: field could be volatile so we need to guarantee atomic access
+          if (SSE2_BASE) {
+            asm.emitMOVQ_Reg_RegInd(XMM0, SP);
+            asm.emitMOVQ_RegDisp_Reg(T0, Magic.getTocPointer().toWord().toOffset(), XMM0);
+          } else {
+            asm.emitFLD_Reg_RegInd_Quad(FP0, SP);
+            asm.emitFSTP_RegDisp_Reg_Quad(T0, Magic.getTocPointer().toWord().toOffset(), FP0);
+          }
+          adjustStack(2 * WORDSIZE, false);
         } else {
           asm.generateJTOCpop(T0);
           if (fieldRef.getNumberOfStackSlots() != 1) {
@@ -2420,8 +2448,20 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
       } else { // field is two words (double or long)
         if (VM.VerifyAssertions) VM._assert(fieldRef.getSize() == BYTES_IN_LONG);
         if (VM.BuildFor32Addr) {
-          asm.generateJTOCpop(fieldOffset);                // store low part
-          asm.generateJTOCpop(fieldOffset.plus(WORDSIZE)); // store high part
+          // JMM: we need to guarantee atomic access for volatile fields
+          if (field.isVolatile()) {
+            if (SSE2_BASE) {
+              asm.emitMOVQ_Reg_RegInd(XMM0, SP);
+              asm.emitMOVQ_Abs_Reg(Magic.getTocPointer().plus(fieldOffset), XMM0);
+            } else {
+              asm.emitFLD_Reg_RegInd_Quad(FP0, SP);
+              asm.emitFSTP_Abs_Reg_Quad(Magic.getTocPointer().plus(fieldOffset), FP0);
+            }
+            adjustStack(2 * WORDSIZE, false);
+          } else {
+            asm.emitPOP_Abs(Magic.getTocPointer().plus(fieldOffset));          // store low part
+            asm.emitPOP_Abs(Magic.getTocPointer().plus(fieldOffset).plus(WORDSIZE)); // store high part
+          }
         } else {
           asm.generateJTOCpop(fieldOffset);
           if (fieldRef.getNumberOfStackSlots() != 1) {
@@ -2629,7 +2669,7 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
         asm.emitMOVZX_Reg_RegDisp_Word(T0, S0, fieldOffset); // T0 is field value
         asm.emitPUSH_Reg(T0);                                // place value on stack
       } else if (fieldType.isIntType() || fieldType.isFloatType() ||
-                 (VM.BuildFor32Addr && fieldType.isWordType())) {
+                 (VM.BuildFor32Addr && fieldType.isWordLikeType())) {
         // 32bit load
         stackMoveHelper(S0, offset);                         // S0 is object reference
         if (VM.BuildFor32Addr) {
@@ -2642,7 +2682,7 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
         // 64bit load
         if (VM.VerifyAssertions) {
           VM._assert(fieldType.isLongType() || fieldType.isDoubleType() ||
-                     (VM.BuildFor64Addr && fieldType.isWordType()));
+                     (VM.BuildFor64Addr && fieldType.isWordLikeType()));
         }
         stackMoveHelper(S0, offset);                  // S0 is object reference
         if (VM.BuildFor32Addr && field.isVolatile()) {
@@ -2661,7 +2701,7 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
           asm.emitPUSH_RegDisp(S0, fieldOffset.plus(ONE_SLOT)); // place high half on stack
           asm.emitPUSH_RegDisp(S0, fieldOffset);                // place low half on stack
         } else {
-          if (!fieldType.isWordType()) {
+          if (!fieldType.isWordLikeType()) {
             adjustStack(-WORDSIZE, true); // add empty slot
           }
           asm.emitPUSH_RegDisp(S0, fieldOffset); // place value on stack
@@ -4277,6 +4317,8 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
         }
       }
 
+      Offset initialOffsetToFirstArg = offsetToFirstArg;
+      Offset initialOffsetToLastArg = offsetToLastArg;
       // Generate argument pushing and call code upto twice, once with realignment
       ForwardReference afterCalls = null;
       for (int j = VM.BuildFor32Addr ? 1 : 0;  j < 2; j++) {
@@ -4286,6 +4328,9 @@ public final class BaselineCompilerImpl extends BaselineCompiler {
           offsetToLastArg = offsetToLastArg.plus(WORDSIZE);
         } else {
           if (dontRealignStack != null) dontRealignStack.resolve(asm);
+          offsetToFirstArg = initialOffsetToFirstArg;
+          offsetToLastArg = initialOffsetToLastArg;
+          paramBytes = 0;
         }
         // (4) Stack remaining args to target function from right-to-left
         //     (NB avoid the first argument holding the target function address)

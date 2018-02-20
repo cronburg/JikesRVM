@@ -539,8 +539,19 @@ final class BaselineMagic {
       // No offset
       asm.emitPOP_Reg(T0);                  // base
       if (VM.BuildFor32Addr) {
-        asm.emitPUSH_RegDisp(T0, ONE_SLOT); // pushes [T0+4]
-        asm.emitPUSH_RegInd(T0);            // pushes [T0]
+        if (SSE2_BASE) {
+          asm.emitMOVQ_Reg_RegDisp(XMM0, T0, Offset.zero());
+          // adjust stack pointer to make room for the 64-bit value
+          asm.emitPUSH_Reg(EAX);
+          asm.emitPUSH_Reg(EAX);
+          asm.emitMOVQ_RegInd_Reg(SP, XMM0);
+        } else {
+          asm.emitFLD_Reg_Abs_Quad(FP0, Address.zero());
+          // adjust stack pointer to make room for the 64-bit value
+          asm.emitPUSH_Reg(EAX);
+          asm.emitPUSH_Reg(EAX);
+          asm.emitFSTP_RegInd_Reg_Quad(SP, FP0);
+        }
       } else {
         asm.emitPUSH_Reg(T0);               // create space
         asm.emitPUSH_RegInd(T0);            // pushes [T0]
@@ -564,8 +575,19 @@ final class BaselineMagic {
       asm.emitPOP_Reg(S0);                  // offset
       asm.emitPOP_Reg(T0);                  // base
       if (VM.BuildFor32Addr) {
-        asm.emitPUSH_RegIdx(T0, S0, BYTE, ONE_SLOT); // pushes [T0+S0+4]
-        asm.emitPUSH_RegIdx(T0, S0, BYTE, NO_SLOT);  // pushes [T0+S0]
+        if (SSE2_BASE) {
+          asm.emitMOVQ_Reg_RegIdx(XMM0, T0, S0, BYTE, NO_SLOT);
+          // adjust stack pointer to make room for the 64-bit value
+          asm.emitPUSH_Reg(EAX);
+          asm.emitPUSH_Reg(EAX);
+          asm.emitMOVQ_RegInd_Reg(SP, XMM0);
+        } else {
+          asm.emitFLD_Reg_RegIdx_Quad(FP0, T0, S0, BYTE, NO_SLOT);
+          // adjust stack pointer to make room for the 64-bit value
+          asm.emitPUSH_Reg(EAX);
+          asm.emitPUSH_Reg(EAX);
+          asm.emitFSTP_RegInd_Reg_Quad(SP, FP0);
+          }
       } else {
         asm.emitPUSH_Reg(T0);                                  // create space
         asm.emitPUSH_RegIdx(T0, S0, BYTE, NO_SLOT);  // pushes [T0+S0]
@@ -1270,8 +1292,7 @@ final class BaselineMagic {
     generators.put(getMethodReference(Magic.class, MagicNames.intBitsAsFloat, int.class, float.class), g);
     generators.put(getMethodReference(Magic.class, MagicNames.doubleAsLongBits, double.class, long.class), g);
     generators.put(getMethodReference(Magic.class, MagicNames.longBitsAsDouble, long.class, double.class), g);
-    generators.put(getMethodReference(Magic.class, MagicNames.sync, void.class), g);
-    generators.put(getMethodReference(Magic.class, MagicNames.isync, void.class), g);
+    generators.put(getMethodReference(Magic.class, MagicNames.synchronizeInstructionCache, void.class), g);
     generators.put(getMethodReference(Magic.class, MagicNames.combinedLoadBarrier, void.class), g);
     generators.put(getMethodReference(Magic.class, MagicNames.storeStoreBarrier, void.class), g);
     if (VALIDATE_OBJECT_REFERENCES) {
