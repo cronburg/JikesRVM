@@ -330,12 +330,12 @@ EXTERNAL jfloat sysVaArgJfloat(va_list *ap);
 EXTERNAL jdouble sysVaArgJdouble(va_list *ap);
 EXTERNAL jobject sysVaArgJobject(va_list *ap);
 // sysPermcheck
-EXTERNAL void sysPermcheckInitializeMap(int shadowMapID);
-EXTERNAL void sysPermcheckDestroyMap(int shadowMapID);
-EXTERNAL int  sysPermcheckGetBit(int shadowMapID, Address a, int offset);
-EXTERNAL void sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset);
-EXTERNAL void sysPermcheckMarkBit(int shadowMapID, Address a, int offset);
-EXTERNAL void sysPermcheckSetBits(int shadowMapID, Address a, char mbits);
+EXTERNAL int sysPermcheckInitializeMap(int shadowMapID);
+EXTERNAL int sysPermcheckDestroyMap(int shadowMapID);
+EXTERNAL int sysPermcheckGetBit(int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckMarkBit(int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckSetBits(int shadowMapID, Address a, char mbits);
 EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a);
 EXTERNAL void sysPermcheckRegisterFunction(Address start, int size, char* descriptor, int descr_length);
 EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz);

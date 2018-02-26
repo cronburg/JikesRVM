@@ -12,19 +12,86 @@
  */
 
 #include "sys.h"
+#include <sys/mman.h> // mmap
 
-EXTERNAL void sysPermcheckInitializeMap(int shadowMapID) { /* Intercepted by PIN tool */ }
-EXTERNAL void sysPermcheckDestroyMap(int shadowMapID) { /* Intercepted by PIN tool */ }
+typedef int Int;
+typedef size_t SizeT;
+typedef unsigned long int Addr;
+typedef unsigned char U8; //UChar;
 
-EXTERNAL int  sysPermcheckGetBit(int shadowMapID, Address a, int offset) {
-    return (volatile int) shadowMapID;
+#ifdef PERMCHECK_ON_LIGHTWEIGHT
+
+// TODO:
+#define assert(foo) // ignore assertions for now
+
+void  shadow_free(void* addr) {
+  // TODO
+  sysExit(EXIT_STATUS_SYSCALL_TROUBLE);
 }
 
-EXTERNAL void sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset) { /* Intercepted by PIN tool */ }
-EXTERNAL void sysPermcheckMarkBit(int shadowMapID, Address a, int offset) {/* Intercepted by PIN tool */ }
-EXTERNAL void sysPermcheckSetBits(int shadowMapID, Address a, char mbits) { /* Intercepted by PIN tool */ }
+// TODO
+#define _page_align(x) x
+
+void *shadow_malloc(size_t size) {
+  // Do I need a custom allocator here? The freeing behavior of these calls to
+  // shadow_malloc() are significantly different from that of the application.
+  // Namely, at present shadow_free *never* gets called thereby fragmenting what
+  // could be a contiguous application heap every time shadow_malloc() gets
+  // called i.e. when the application allocates in a new virtual address space
+  // shadow map.
+  //void* base = sbrk(_page_align(size));
+  void* base = mmap(NULL, _page_align(size), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+#ifdef CHISEL_SHOW_ALLOC_CALLS
+  fprintf(stderr, "shadow_malloc] %p:%lu\n", base, size);
+#endif // CHISEL_SHOW_ALLOC_CALLS
+  return base;
+}
+
+void *shadow_calloc(size_t nmemb, size_t size) {
+  //void* base = sbrk(_page_align(nmemb * size));
+  void* base = mmap(NULL, _page_align(nmemb * size), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+  memset(base, 0, _page_align(nmemb * size));
+  return base; //calloc(nmemb, size);
+}
+
+void  shadow_memcpy(void* dst, void* src, size_t size) { memcpy(dst,src,size); }
+void  shadow_out_of_memory() {
+  printf("ERROR: Ran out of memory while allocating shadow memory.\n");
+  sysExit(EXIT_STATUS_SYSCALL_TROUBLE);
+}
+#include "shadow-32.h"
+#include "permcheck-lightweight.c"
+ShadowMap *maps = NULL;
+
+#define runMe(FNCN) (FNCN); return (volatile int) shadowMapID;
+#else
+#define runMe(FNCN) return (volatile int) shadowMapID;
+
+#endif // PERMCHECK_ON_LIGHTWEIGHT
+
+EXTERNAL int sysPermcheckInitializeMap(int shadowMapID) {
+  runMe(init_map(shadowMapID));
+}
+EXTERNAL int sysPermcheckDestroyMap(int shadowMapID) {
+  runMe(destroy_map(shadowMapID));
+}
+
+EXTERNAL int  sysPermcheckGetBit(int shadowMapID, Address a, int offset) {
+  shadowMapID = runMe(get_bit(shadowMapID, a, offset));
+}
+
+EXTERNAL int sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset) {
+  runMe(unmark_bit(shadowMapID, a, offset));
+}
+
+EXTERNAL int sysPermcheckMarkBit(int shadowMapID, Address a, int offset) {
+  runMe(mark_bit(shadowMapID, a, offset));
+}
+EXTERNAL int sysPermcheckSetBits(int shadowMapID, Address a, char mbits) {
+  runMe(set_bits(shadowMapID, a, mbits));
+}
 EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a) {
-    return (volatile int) shadowMapID;
+  shadowMapID = runMe(get_bits(shadowMapID, a));
 }
 
 // Register a new function - all subsequent RegisterLineNumber calls correspond to the function
@@ -45,3 +112,19 @@ EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
     sysPermcheckRegisterLineNumber((Address)(start + i), line_numbers[2 * i], line_numbers[2 * i + 1]);
   }
 }
+
+#ifdef PERMCHECK_ON_LIGHTWEIGHT
+
+void init_chisel(void* mem) {
+  permcheck_init_maps(1, mem);
+}
+
+#else // PERMCHECK_ON_PIN? TODO
+#define init_chisel(mem)
+#endif
+
+enum _maps
+  { CHISEL_TYPE_MAP = 0
+  };
+typedef enum _maps stateMapNum;
+

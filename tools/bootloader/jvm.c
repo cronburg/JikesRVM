@@ -389,6 +389,8 @@ int createVM(int vmInSeparateThread)
   if (bootRMapRegion != (void *)bootImageRMapAddress)
     return 1;
 
+  // [karl]
+  init_chisel(NULL);
 
   /* validate contents of boot record */
   bootRecord = (struct BootRecord *) bootDataRegion;

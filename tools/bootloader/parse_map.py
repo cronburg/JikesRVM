@@ -78,7 +78,7 @@ with open(map_fn, 'r') as map_fd, open(asm_fn, 'w') as asm_fd:
              .replace('/', '_')
 
     # Fully mangled name:
-    mangled = "%s.%s__%s" % (typ,method,sig)
+    mangled = "%s.%s__%s.%s" % (typ,method,sig,offset)
     try:
       methods.append((offset, mangled, line_nums, method_szs[offset]))
     except KeyError as e:

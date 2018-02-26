@@ -15,6 +15,7 @@ public abstract class Permcheck {
   public static final byte SPACE_LEVEL = 0x02;
   public static final byte BLOCK_LEVEL = 0x03;
   public static final byte CELL_LEVEL = 0x04;
+  public static final byte STATUS_WORD_LEVEL = 0x05;
   
   private static void writeLevel(int level) {
   	switch (level) {
@@ -22,6 +23,7 @@ public abstract class Permcheck {
     	case SPACE_LEVEL: Log.write("SPACE"); break;
     	case BLOCK_LEVEL: Log.write("BLOCK"); break;
     	case CELL_LEVEL:  Log.write("CELL");  break;
+    	case STATUS_WORD_LEVEL: Log.write("STATUS_WORD"); break;
     }
   }
   

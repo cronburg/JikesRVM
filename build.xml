@@ -1892,6 +1892,7 @@ const char *rvm_target_configuration = "${target.file}";
     <property name="rvm.defines" value="-D_REENTRANT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE ${filter} "/>
 
     <property name="rvm.c.args" value="${c.args} ${rvm.includes} ${rvm.defines}"/>
+    <property name="rvm.permcheck.args" value="${permcheck.args}"/>
   </target>
   
   <target name="build-gcspy-stub" depends="check-bootloader-properties" if="include.gcspy-stub">
@@ -1934,7 +1935,7 @@ const char *rvm_target_configuration = "${target.file}";
                    cargs="${rvm.c.args}"/>
     <CompileCtoObj cfile="${bl.dir}/sysPermcheck.c"
                    objfile="${build.base}/${target.obj-prefix}sysPermcheck${target.obj-ext}"
-                   cargs="${rvm.c.args}"/>
+                   cargs="${rvm.c.args} ${rvm.permcheck.args}"/>
     <CompileCtoObj cfile="${bl.dir}/sysMisc.c"
                    objfile="${build.base}/${target.obj-prefix}sysMisc${target.obj-ext}"
                    cargs="${rvm.c.args}"/>

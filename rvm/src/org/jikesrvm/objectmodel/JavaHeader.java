@@ -42,6 +42,8 @@ import org.jikesrvm.runtime.Memory;
 import org.jikesrvm.scheduler.Lock;
 import org.jikesrvm.scheduler.RVMThread;
 import org.jikesrvm.scheduler.ThinLock;
+import org.mmtk.utility.Constants;
+import org.mmtk.vm.Permcheck;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Interruptible;
 import org.vmmagic.pragma.NoInline;
@@ -797,6 +799,7 @@ public class JavaHeader {
    */
   @Interruptible
   public static void initializeAvailableByte(Object o) {
+	Permcheck.MarkData(Magic.objectAsAddress(o).plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.STATUS_WORD_LEVEL);
     if (!ADDRESS_BASED_HASHING) getObjectHashCode(o);
   }
 
