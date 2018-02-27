@@ -59,13 +59,13 @@ void  shadow_out_of_memory() {
   printf("ERROR: Ran out of memory while allocating shadow memory.\n");
   sysExit(EXIT_STATUS_SYSCALL_TROUBLE);
 }
-#include "shadow-32.h"
+#include "shadow-32.c"
 #include "permcheck-lightweight.c"
 ShadowMap *maps = NULL;
 
 #define runMe(FNCN) (FNCN); return (volatile int) shadowMapID;
 #else
-#define runMe(FNCN) return (volatile int) shadowMapID;
+#define runMe(FNCN) shadowMapID; return (volatile int) shadowMapID;
 
 #endif // PERMCHECK_ON_LIGHTWEIGHT
 
@@ -113,15 +113,14 @@ EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
   }
 }
 
-#ifdef PERMCHECK_ON_LIGHTWEIGHT
 
 void init_chisel(void* mem) {
-  permcheck_init_maps(1, mem);
-}
-
+#ifdef PERMCHECK_ON_LIGHTWEIGHT
+  permcheck_init_maps(1, (Addr)mem);
 #else // PERMCHECK_ON_PIN? TODO
-#define init_chisel(mem)
+
 #endif
+}
 
 enum _maps
   { CHISEL_TYPE_MAP = 0
