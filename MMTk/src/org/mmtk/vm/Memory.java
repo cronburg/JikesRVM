@@ -145,6 +145,8 @@ import org.vmmagic.pragma.*;
   public abstract void    PermcheckSetBits   (int shadowMapID, Address a, byte mbits);
   public abstract byte    PermcheckGetBits   (int shadowMapID, Address a); 
   public abstract void    PermcheckSetBytes  (int shadowMapID, Address start, int size, byte mbits);
+  public abstract void    PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag);
+  public abstract void    PermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag);
 
   /*
    * NOTE: The following methods must be implemented by subclasses of this

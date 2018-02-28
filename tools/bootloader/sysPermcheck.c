@@ -93,6 +93,12 @@ EXTERNAL int sysPermcheckSetBits(int shadowMapID, Address a, char mbits) {
 EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a) {
   shadowMapID = runMe(get_bits(shadowMapID, a));
 }
+EXTERNAL int sysPermcheckCanReadType(int shadowMapID, char mbits, int flag) {
+  /* Intercepted by PIN tool */
+}
+EXTERNAL int sysPermcheckCanWriteType(int shadowMapID, char mbits, int flag) {
+  /* Intercepted by PIN tool */
+}
 
 // Register a new function - all subsequent RegisterLineNumber calls correspond to the function
 // given to the most recent call to this function. See 'sysPermcheckNewFunction' for usage pattern

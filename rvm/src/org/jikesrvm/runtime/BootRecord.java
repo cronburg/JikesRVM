@@ -260,6 +260,8 @@ public class BootRecord {
   public Address sysPermcheckSetBitsIP;
   public Address sysPermcheckGetBitsIP;
   public Address sysPermcheckNewFunctionIP;
+  public Address sysPermcheckCanReadTypeIP;
+  public Address sysPermcheckCanWriteTypeIP;
 
   // files
   public Address sysReadByteIP;

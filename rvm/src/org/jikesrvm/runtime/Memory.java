@@ -687,5 +687,14 @@ public class Memory {
   public static void PermcheckNewFunction(Address start, int size, byte[] descriptor, int[] lm, int lm_length) {
     SysCall.sysCall.sysPermcheckNewFunction(start, size, descriptor, descriptor.length, lm, lm_length);
   }
-
+  // TODO: [karl] learn types readable and writeable in the boot image with these calls during boot image writer
+  public static void PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag) {
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckCanReadType(shadowMapID, mbits, flag);
+  }
+  public static void PermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag) {
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckCanWriteType(shadowMapID, mbits, flag);
+  }
+  
 }

@@ -341,6 +341,8 @@ EXTERNAL void sysPermcheckRegisterFunction(Address start, int size, char* descri
 EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz);
 EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
                                       int descr_length, int* line_numbers, int line_numbers_length);
+EXTERNAL int sysPermcheckCanReadType(int shadowMapID, char mbits, int flag);
+EXTERNAL int sysPermcheckCanWriteType(int shadowMapID, char mbits, int flag);
 
 /** Only called externally from Java programs. */
 EXTERNAL void sysExit(int) NORETURN;

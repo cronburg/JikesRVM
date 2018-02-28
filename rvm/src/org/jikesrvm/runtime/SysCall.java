@@ -383,22 +383,26 @@ public abstract class SysCall {
    * Permcheck client requests
    */
   @SysCallTemplate
-  public abstract void sysPermcheckInitializeMap (int shadowMapID);
+  public abstract void sysPermcheckInitializeMap(int shadowMapID);
   @SysCallTemplate
-  public abstract void sysPermcheckDestroyMap    (int shadowMapID);
+  public abstract void sysPermcheckDestroyMap(int shadowMapID);
   @SysCallTemplate
-  public abstract int  sysPermcheckGetBit        (int shadowMapID, Address a, int offset);
+  public abstract int  sysPermcheckGetBit(int shadowMapID, Address a, int offset);
   @SysCallTemplate
-  public abstract void sysPermcheckUnmarkBit     (int shadowMapID, Address a, int offset);
+  public abstract void sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset);
   @SysCallTemplate
-  public abstract void sysPermcheckMarkBit       (int shadowMapID, Address a, int offset);
+  public abstract void sysPermcheckMarkBit(int shadowMapID, Address a, int offset);
   @SysCallTemplate
-  public abstract void sysPermcheckSetBits       (int shadowMapID, Address a, byte mbits);
+  public abstract void sysPermcheckSetBits(int shadowMapID, Address a, byte mbits);
   @SysCallTemplate
-  public abstract byte sysPermcheckGetBits       (int shadowMapID, Address a); 
+  public abstract byte sysPermcheckGetBits(int shadowMapID, Address a); 
   @SysCallTemplate
-	public abstract void sysPermcheckNewFunction(Address start, int size, byte[] descriptor, int descr_length, int[] line_numbers, int line_numbers_length);
-
+  public abstract void sysPermcheckNewFunction(Address start, int size, byte[] descriptor, int descr_length, int[] line_numbers, int line_numbers_length);
+  @SysCallTemplate
+  public abstract void sysPermcheckCanReadType(int shadowMapID, byte mbits, boolean flag);
+  @SysCallTemplate
+  public abstract void sysPermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag);
+  
   // system calls for alignment checking
   @SysCallTemplate
   public abstract void sysEnableAlignmentChecking();

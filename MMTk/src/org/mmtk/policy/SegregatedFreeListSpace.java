@@ -544,7 +544,7 @@ public abstract class SegregatedFreeListSpace extends Space {
     boolean liveBlock = containsLiveCell(block, blockSize, clearMarks);
     if (!liveBlock) {
     	Address cursor = block.plus(blockHeaderSize[sizeClass]);
-		  Permcheck.UnmarkData(cursor, blockSize.minus(blockHeaderSize[sizeClass]).toInt(), Permcheck.CELL_LEVEL);
+		  Permcheck.UnmarkData(cursor, blockSize.minus(blockHeaderSize[sizeClass]).toInt(), Permcheck.Type.CELL);
       freeBlock(block);
 		} else {
       BlockAllocator.setNext(block, availableHead);
@@ -675,7 +675,7 @@ public abstract class SegregatedFreeListSpace extends Space {
           lastFree.store(cursor);
         }
         Memory.zeroSmall(cursor, cellExtent);
-        Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.CELL_LEVEL);
+        Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.Type.CELL);
         lastFree = cursor;
       }
       cursor = cursor.plus(cellExtent);

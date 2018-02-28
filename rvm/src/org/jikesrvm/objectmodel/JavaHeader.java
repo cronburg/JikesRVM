@@ -244,6 +244,13 @@ public class JavaHeader {
   public static void setTIB(BootImageInterface bootImage, Address refOffset, Address tibAddr, RVMType type) {
     bootImage.setAddressWord(refOffset.plus(TIB_OFFSET), tibAddr.toWord(), false, false);
   }
+  
+  public static Word getWordAtStatusOffset(Object o) {
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
+    Word ret = Magic.getWordAtOffset(o, STATUS_OFFSET);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
+    return ret;
+  }
 
   /**
    * @param fromObj the object to copy
@@ -253,7 +260,7 @@ public class JavaHeader {
   public static int bytesRequiredWhenCopied(Object fromObj, RVMClass type) {
     int size = type.getInstanceSize();
     if (ADDRESS_BASED_HASHING) {
-      Word hashState = Magic.getWordAtOffset(fromObj, STATUS_OFFSET).and(HASH_STATE_MASK);
+      Word hashState = getWordAtStatusOffset(fromObj).and(HASH_STATE_MASK);
       if (hashState.NE(HASH_STATE_UNHASHED)) {
         size += HASHCODE_BYTES;
       }
@@ -270,7 +277,7 @@ public class JavaHeader {
     int size = type.getInstanceSize();
     if (MOVES_OBJECTS) {
       if (ADDRESS_BASED_HASHING) {
-        Word hashState = Magic.getWordAtOffset(obj, STATUS_OFFSET).and(HASH_STATE_MASK);
+        Word hashState = getWordAtStatusOffset(obj).and(HASH_STATE_MASK);
         if (hashState.EQ(HASH_STATE_HASHED_AND_MOVED)) {
           size += HASHCODE_BYTES;
         }
@@ -290,7 +297,7 @@ public class JavaHeader {
   public static int bytesRequiredWhenCopied(Object fromObj, RVMArray type, int numElements) {
     int size = type.getInstanceSize(numElements);
     if (ADDRESS_BASED_HASHING) {
-      Word hashState = Magic.getWordAtOffset(fromObj, STATUS_OFFSET).and(HASH_STATE_MASK);
+      Word hashState = getWordAtStatusOffset(fromObj).and(HASH_STATE_MASK);
       if (hashState.NE(HASH_STATE_UNHASHED)) {
         size += HASHCODE_BYTES;
       }
@@ -309,7 +316,7 @@ public class JavaHeader {
     int size = type.getInstanceSize(numElements);
     if (MOVES_OBJECTS) {
       if (ADDRESS_BASED_HASHING) {
-        Word hashState = Magic.getWordAtOffset(obj, STATUS_OFFSET).and(HASH_STATE_MASK);
+        Word hashState = getWordAtStatusOffset(obj).and(HASH_STATE_MASK);
         if (hashState.EQ(HASH_STATE_HASHED_AND_MOVED)) {
           size += HASHCODE_BYTES;
         }
@@ -546,7 +553,7 @@ public class JavaHeader {
 
     if (ADDRESS_BASED_HASHING) {
       // Read the hash state (used below)
-      statusWord = Magic.getWordAtOffset(fromObj, STATUS_OFFSET);
+      statusWord = getWordAtStatusOffset(fromObj);
       hashState = statusWord.and(HASH_STATE_MASK);
       if (hashState.EQ(HASH_STATE_HASHED)) {
         // We do not copy the hashcode, but we do allocate it
@@ -588,7 +595,9 @@ public class JavaHeader {
       } else {
         Magic.setIntAtOffset(toObj, HASHCODE_OFFSET, (hashCode << 1) | ALIGNMENT_MASK);
       }
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       Magic.setWordAtOffset(toObj, STATUS_OFFSET, statusWord.or(HASH_STATE_HASHED_AND_MOVED));
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
       if (ObjectModel.HASH_STATS) ObjectModel.hashTransition2++;
     }
 
@@ -598,11 +607,13 @@ public class JavaHeader {
   @Inline
   @Interruptible
   public static int getObjectHashCode(Object o) {
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, true);
     if (ADDRESS_BASED_HASHING) {
       if (MOVES_OBJECTS) {
         Word hashState = Magic.getWordAtOffset(o, STATUS_OFFSET).and(HASH_STATE_MASK);
         if (hashState.EQ(HASH_STATE_HASHED)) {
           // HASHED, NOT MOVED
+          Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
           return Magic.objectAsAddress(o).toWord().rshl(LOG_BYTES_IN_ADDRESS).toInt();
         } else if (hashState.EQ(HASH_STATE_HASHED_AND_MOVED)) {
           // HASHED AND MOVED
@@ -612,8 +623,10 @@ public class JavaHeader {
             int offset =
                 t.isArrayType() ? t.asArray().getInstanceSize(Magic.getArrayLength(o)) -
                                   OBJECT_REF_OFFSET : t.asClass().getInstanceSize() - OBJECT_REF_OFFSET;
+            Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
             return Magic.getIntAtOffset(o, Offset.fromIntSignExtend(offset));
           } else {
+            Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
             return (Magic.getIntAtOffset(o, HASHCODE_OFFSET) >>> 1);
           }
         } else {
@@ -623,9 +636,11 @@ public class JavaHeader {
             tmp = Magic.prepareWord(o, STATUS_OFFSET);
           } while (!Magic.attemptWord(o, STATUS_OFFSET, tmp, tmp.or(HASH_STATE_HASHED)));
           if (ObjectModel.HASH_STATS) ObjectModel.hashTransition1++;
+          Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
           return getObjectHashCode(o);
         }
       } else {
+        Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
         return Magic.objectAsAddress(o).toWord().rshl(LOG_BYTES_IN_ADDRESS).toInt();
       }
     } else { // 10 bit hash code in status word
@@ -633,6 +648,7 @@ public class JavaHeader {
       if (hashCode != 0) {
         return hashCode;
       }
+      Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
       return installHashCode(o);
     }
   }
@@ -645,14 +661,17 @@ public class JavaHeader {
       hashCodeGenerator = hashCodeGenerator.plus(Word.one().lsh(HASH_CODE_SHIFT));
       hashCode = hashCodeGenerator.and(HASH_CODE_MASK);
     } while (hashCode.isZero());
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, true);
     while (true) {
       Word statusWord = Magic.prepareWord(o, STATUS_OFFSET);
       if (!(statusWord.and(HASH_CODE_MASK).isZero())) {
         // some other thread installed a hashcode
+        Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
         return statusWord.and(HASH_CODE_MASK).rshl(HASH_CODE_SHIFT).toInt();
       }
       if (Magic.attemptWord(o, STATUS_OFFSET, statusWord, statusWord.or(hashCode))) {
         // we installed the hash code
+        Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
         return hashCode.rshl(HASH_CODE_SHIFT).toInt();
       }
     }
@@ -679,12 +698,16 @@ public class JavaHeader {
 
   @Unpreemptible("Become another thread when lock is contended, don't preempt in other cases")
   public static void genericLock(Object o) {
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
     ThinLock.lock(o, STATUS_OFFSET);
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
   }
 
   @Unpreemptible("No interruption unless of exceptions")
   public static void genericUnlock(Object o) {
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
     ThinLock.unlock(o, STATUS_OFFSET);
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
   }
 
   /**
@@ -694,7 +717,10 @@ public class JavaHeader {
    *         by thread <code>false</code> if it is not.
    */
   public static boolean holdsLock(Object obj, RVMThread thread) {
-    return ThinLock.holdsLock(obj, STATUS_OFFSET, thread);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
+    boolean ret = ThinLock.holdsLock(obj, STATUS_OFFSET, thread);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
+    return ret;
   }
 
   /**
@@ -708,7 +734,10 @@ public class JavaHeader {
    */
   @Unpreemptible("May be interrupted for allocations of locks")
   public static Lock getHeavyLock(Object o, boolean create) {
-    return ThinLock.getHeavyLock(o, STATUS_OFFSET, create);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
+    Lock l = ThinLock.getHeavyLock(o, STATUS_OFFSET, create);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
+    return l;
   }
 
   /**
@@ -718,7 +747,10 @@ public class JavaHeader {
    * @return the available bits word
    */
   public static Word readAvailableBitsWord(Object o) {
-    return Magic.getWordAtOffset(o, STATUS_OFFSET);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
+    Word ret = Magic.getWordAtOffset(o, STATUS_OFFSET);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
+    return ret;
   }
 
   /**
@@ -737,7 +769,9 @@ public class JavaHeader {
    * @param val the available bits word
    */
   public static void writeAvailableBitsWord(Object o, Word val) {
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
     Magic.setWordAtOffset(o, STATUS_OFFSET, val);
+    Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
   }
 
   /**
@@ -781,6 +815,7 @@ public class JavaHeader {
    * @param flag {@code true} for 1, {@code false} for 0
    */
   public static void setAvailableBit(Object o, int idx, boolean flag) {
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, true);
     Word status = Magic.getWordAtOffset(o, STATUS_OFFSET);
     if (flag) {
       Word mask = Word.fromIntSignExtend(1 << idx);
@@ -789,6 +824,7 @@ public class JavaHeader {
       Word mask = Word.fromIntSignExtend(1 << idx).not();
       Magic.setWordAtOffset(o, STATUS_OFFSET, status.and(mask));
     }
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
   }
 
   /**
@@ -799,7 +835,8 @@ public class JavaHeader {
    */
   @Interruptible
   public static void initializeAvailableByte(Object o) {
-	Permcheck.MarkData(Magic.objectAsAddress(o).plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.STATUS_WORD_LEVEL);
+	Permcheck.MarkData(Magic.objectAsAddress(o).plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
+	Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
     if (!ADDRESS_BASED_HASHING) getObjectHashCode(o);
   }
 
@@ -814,7 +851,10 @@ public class JavaHeader {
    * @see #attemptAvailableBits(Object, Word, Word)
    */
   public static Word prepareAvailableBits(Object o) {
-    return Magic.prepareWord(o, STATUS_OFFSET);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
+    Word ret = Magic.prepareWord(o, STATUS_OFFSET);
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
+    return ret;
   }
 
   /**
@@ -831,7 +871,10 @@ public class JavaHeader {
    * @return whether the write occurred
    */
   public static boolean attemptAvailableBits(Object o, Word oldVal, Word newVal) {
-    return Magic.attemptWord(o, STATUS_OFFSET, oldVal, newVal);
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, true);
+    boolean ret = Magic.attemptWord(o, STATUS_OFFSET, oldVal, newVal);
+    Permcheck.CanReadWrite(Permcheck.Type.STATUS_WORD, false);
+    return ret;
   }
 
   /**
@@ -940,7 +983,9 @@ public class JavaHeader {
    */
   public static int getOffsetForAlignment(RVMClass t, ObjectReference obj) {
     if (ADDRESS_BASED_HASHING && !DYNAMIC_HASH_OFFSET) {
+      Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
       Word hashState = obj.toAddress().loadWord(STATUS_OFFSET).and(HASH_STATE_MASK);
+      Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
       if (hashState.NE(HASH_STATE_UNHASHED)) {
         return SCALAR_HEADER_SIZE + HASHCODE_BYTES;
       }
@@ -974,7 +1019,9 @@ public class JavaHeader {
     /* although array_header_size == object_ref_offset we say this
        because the whole point is to align the object ref */
     if (ADDRESS_BASED_HASHING && !DYNAMIC_HASH_OFFSET) {
+      Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
       Word hashState = obj.toAddress().loadWord(STATUS_OFFSET).and(HASH_STATE_MASK);
+      Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
       if (hashState.NE(HASH_STATE_UNHASHED)) {
         return OBJECT_REF_OFFSET + HASHCODE_BYTES;
       }
@@ -1009,7 +1056,9 @@ public class JavaHeader {
   public static Address initializeScalarHeader(BootImageInterface bootImage, Address ptr, TIB tib, int size, boolean needsIdentityHash, int identityHashValue) {
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
     if (needsIdentityHash) {
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED_AND_MOVED.toInt());
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
       if (DYNAMIC_HASH_OFFSET) {
         // Read the size of this object.
         RVMType t = tib.getType();
@@ -1020,7 +1069,9 @@ public class JavaHeader {
       }
     } else {
       // As boot image objects can't move there is no benefit in lazily setting them to hashed
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED.toInt());
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
     }
     return ref;
   }
@@ -1055,7 +1106,9 @@ public class JavaHeader {
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
     // (TIB set by BootImageWriter; array length set by ObjectModel)
     if (needsIdentityHash) {
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED_AND_MOVED.toInt());
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
       if (DYNAMIC_HASH_OFFSET) {
         // Read the size of this object.
         RVMType t = tib.getType();
@@ -1066,7 +1119,9 @@ public class JavaHeader {
       }
     } else {
       // As boot image objects can't move there is no benefit in lazily setting them to hashed
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED.toInt());
+      Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, false);
     }
     return ref;
   }
@@ -1079,6 +1134,8 @@ public class JavaHeader {
   public static void dumpHeader(Object ref) {
     // TIB dumped in ObjectModel
     VM.sysWrite(" STATUS=");
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, true);
     VM.sysWriteHex(Magic.getWordAtOffset(ref, STATUS_OFFSET).toAddress());
+    Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
   }
 }
