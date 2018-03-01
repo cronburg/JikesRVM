@@ -239,10 +239,10 @@ import org.vmmagic.unboxed.Offset;
     org.jikesrvm.runtime.Memory.PermcheckSetBytes(shadowMapID, start, size, mbits);                                           
   }
   public final void PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag) {                                 
-	org.jikesrvm.runtime.Memory.PermcheckCanReadType(shadowMapID, mbits, flag);                                           
+    org.jikesrvm.runtime.Memory.PermcheckCanReadType(shadowMapID, mbits, flag);                                           
   }
   public final void PermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag) {                                 
-	org.jikesrvm.runtime.Memory.PermcheckCanWriteType(shadowMapID, mbits, flag);                                           
+    org.jikesrvm.runtime.Memory.PermcheckCanWriteType(shadowMapID, mbits, flag);                                           
   }
 
 }

@@ -658,34 +658,46 @@ public class Memory {
   }
 
   public static void PermcheckInitializeMap(int shadowMapID) {
-    SysCall.sysCall.sysPermcheckInitializeMap(shadowMapID);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckInitializeMap(shadowMapID);
   }
   public static void PermcheckDestroyMap(int shadowMapID) {
-    SysCall.sysCall.sysPermcheckDestroyMap(shadowMapID);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckDestroyMap(shadowMapID);
   }
   public static boolean PermcheckGetBit(int shadowMapID, Address a, int offset) {
-    return (1 == SysCall.sysCall.sysPermcheckGetBit(shadowMapID,a,offset));
+    if (VM.runningVM)
+      return (1 == SysCall.sysCall.sysPermcheckGetBit(shadowMapID,a,offset));
+    return false;
   }
   public static void PermcheckUnmarkBit(int shadowMapID, Address a, int offset) {
-    SysCall.sysCall.sysPermcheckUnmarkBit(shadowMapID,a,offset);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckUnmarkBit(shadowMapID,a,offset);
   }
   public static void PermcheckMarkBit(int shadowMapID, Address a, int offset) {
-    SysCall.sysCall.sysPermcheckMarkBit(shadowMapID,a,offset);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckMarkBit(shadowMapID,a,offset);
   }
   public static void PermcheckSetBits(int shadowMapID, Address a, byte mbits) {
-    SysCall.sysCall.sysPermcheckSetBits(shadowMapID,a,mbits);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckSetBits(shadowMapID,a,mbits);
   }
   public static byte PermcheckGetBits(int shadowMapID, Address a) {
-    return SysCall.sysCall.sysPermcheckGetBits(shadowMapID,a);
+    if (VM.runningVM)
+      return SysCall.sysCall.sysPermcheckGetBits(shadowMapID,a);
+    return 0;
   }
   public static void PermcheckSetBytes(int shadowMapID, Address start, int size, byte mbits) {
-    for (int i = 0; i < size; i++) {
-      PermcheckSetBits(shadowMapID, start.plus(i), mbits);
-    }   
+    if (VM.runningVM) {
+      for (int i = 0; i < size; i++) {
+        PermcheckSetBits(shadowMapID, start.plus(i), mbits);
+      }
+    }
   }
   public static final int FUNCTION_MAP = 6;
   public static void PermcheckNewFunction(Address start, int size, byte[] descriptor, int[] lm, int lm_length) {
-    SysCall.sysCall.sysPermcheckNewFunction(start, size, descriptor, descriptor.length, lm, lm_length);
+    if (VM.runningVM)
+      SysCall.sysCall.sysPermcheckNewFunction(start, size, descriptor, descriptor.length, lm, lm_length);
   }
   // TODO: [karl] learn types readable and writeable in the boot image with these calls during boot image writer
   public static void PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag) {
