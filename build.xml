@@ -2221,6 +2221,7 @@ target.jni-suffix=${target.jni-suffix}
             <include name="*${target.jni-suffix}"/>
             <include name="JikesRVM${target.exe-ext}"/>
             <include name="JikesRVM-symbols.o"/>
+            <include name="JikesRVM-symbols-lines.bin"/>
           </fileset>
         </copy>
         <chmod perm="ugo+rx">

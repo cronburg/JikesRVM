@@ -104,9 +104,9 @@ with open(map_fn, 'r') as map_fd, open(asm_fn, 'w') as asm_fd:
 methods = sorted(methods, key=lambda tpl: tpl[0])
 with open(bin_fn, 'w') as bin_fd:
   for (offset,mangled,line_nums,method_sz) in methods:
-    dat = struct.pack('Qii', int(offset, 16), int(method_sz), len(line_nums))
+    dat = struct.pack('=QII', int(offset, 16), int(method_sz), len(line_nums))
     for (line_offset, line_num, instr_bytes) in line_nums:
-      dat += struct.pack('Qii', int(line_offset, 16), int(line_num), int(instr_bytes))
+      dat += struct.pack('=QII', int(line_offset, 16), int(line_num), int(instr_bytes))
     dat += mangled + '\n'
     bin_fd.write(dat)
 

@@ -3053,6 +3053,7 @@ public class BootImageWriter {
     return null;
   }
 
+  // Permcheck
   private static void mapPrintLines(PrintStream out, int jtocSlot, Offset jtocOff, String pad, CompiledMethod cm) {
     String details;
     String contents = Services.addressAsHexString(getReferenceAddr(jtocOff, false)) + pad;
@@ -3085,6 +3086,8 @@ public class BootImageWriter {
                   category + "  " + contents + "  " + details);
     }
   }
+  
+  // Permcheck
   private static void mapPrintLines(PrintStream out, String prefix, Address code, CompiledMethod cm) {
     String details;
     String category =    "lines    ";
