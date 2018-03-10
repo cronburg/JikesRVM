@@ -1035,7 +1035,7 @@ public class JavaHeader {
    * @return the object whose header was initialized
    */
   public static Object initializeScalarHeader(Address ptr, TIB tib, int size) {
-    Permcheck.MarkData(ptr.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
+    Permcheck.MarkData(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
     // (TIB set by ObjectModel)
     Object ref = Magic.addressAsObject(ptr.plus(OBJECT_REF_OFFSET));
@@ -1054,9 +1054,9 @@ public class JavaHeader {
    */
   @Interruptible
   public static Address initializeScalarHeader(BootImageInterface bootImage, Address ptr, TIB tib, int size, boolean needsIdentityHash, int identityHashValue) {
-    Permcheck.MarkData(ptr.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
+    Permcheck.MarkData(ref.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     if (needsIdentityHash) {
       Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED_AND_MOVED.toInt());
@@ -1086,9 +1086,9 @@ public class JavaHeader {
    * @return the array whose header was initialized
    */
   public static Object initializeArrayHeader(Address ptr, TIB tib, int size) {
-    Permcheck.MarkData(ptr.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
     Object ref = Magic.addressAsObject(ptr.plus(OBJECT_REF_OFFSET));
+    Permcheck.MarkData(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     // (TIB and array length set by ObjectModel)
     return ref;
   }
@@ -1107,9 +1107,9 @@ public class JavaHeader {
    */
   @Interruptible
   public static Address initializeArrayHeader(BootImageInterface bootImage, Address ptr, TIB tib, int size, int numElements, boolean needsIdentityHash, int identityHashValue) {
-    Permcheck.MarkData(ptr.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     Permcheck.CanRead(Permcheck.Type.STATUS_WORD, false);
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
+    Permcheck.MarkData(ref.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.STATUS_WORD);
     // (TIB set by BootImageWriter; array length set by ObjectModel)
     if (needsIdentityHash) {
       Permcheck.CanWrite(Permcheck.Type.STATUS_WORD, true);
