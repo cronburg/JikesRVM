@@ -105,6 +105,11 @@ import org.vmmagic.unboxed.Word;
       return org.jikesrvm.objectmodel.ObjectModel.bytesRequiredWhenCopied(object.toObject(), type.asArray(), Magic.getArrayLength(object.toObject()));
   }
 
+
+  public void deinitializeHeader(ObjectReference object) {
+    org.jikesrvm.objectmodel.JavaHeader.deinitializeHeader(object);
+  }
+  
   /**
    * @param region The start (or an address less than) the region that was reserved for this object.
    */

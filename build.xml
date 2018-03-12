@@ -1892,7 +1892,10 @@ const char *rvm_target_configuration = "${target.file}";
     <property name="rvm.defines" value="-D_REENTRANT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE ${filter} "/>
 
     <property name="rvm.c.args" value="${c.args} ${rvm.includes} ${rvm.defines}"/>
-    <property name="rvm.permcheck.args" value="${permcheck.args}"/>
+    
+    <condition property="rvm.permcheck.args" value="${permcheck.args}" else="">
+      <isset property="permcheck.args" />
+    </condition>
   </target>
   
   <target name="build-gcspy-stub" depends="check-bootloader-properties" if="include.gcspy-stub">

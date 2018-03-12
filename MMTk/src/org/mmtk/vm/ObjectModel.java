@@ -258,4 +258,6 @@ public abstract class ObjectModel {
   static Offset arrayBaseOffsetTrapdoor(ObjectModel o) {
     return o.getArrayBaseOffset();
   }
+
+  public abstract void deinitializeHeader(ObjectReference object);
 }

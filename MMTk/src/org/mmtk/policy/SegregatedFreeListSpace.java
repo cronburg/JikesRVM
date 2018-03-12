@@ -23,7 +23,6 @@ import org.mmtk.utility.Conversions;
 import org.mmtk.utility.Memory;
 
 import org.mmtk.vm.Lock;
-import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -544,7 +543,7 @@ public abstract class SegregatedFreeListSpace extends Space {
     boolean liveBlock = containsLiveCell(block, blockSize, clearMarks);
     if (!liveBlock) {
     	Address cursor = block.plus(blockHeaderSize[sizeClass]);
-		  Permcheck.UnmarkData(cursor, blockSize.minus(blockHeaderSize[sizeClass]).toInt(), Permcheck.Type.CELL);
+		  //Permcheck.UnmarkData(cursor, blockSize.minus(blockHeaderSize[sizeClass]).toInt(), Permcheck.Type.CELL);
       freeBlock(block);
 		} else {
       BlockAllocator.setNext(block, availableHead);
@@ -675,7 +674,7 @@ public abstract class SegregatedFreeListSpace extends Space {
           lastFree.store(cursor);
         }
         Memory.zeroSmall(cursor, cellExtent);
-        Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.Type.CELL);
+        //Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.Type.CELL);
         lastFree = cursor;
       }
       cursor = cursor.plus(cellExtent);
@@ -919,6 +918,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void clearLiveBit(ObjectReference object) {
     clearLiveBit(VM.objectModel.refToAddress(object));
+    VM.objectModel.deinitializeHeader(object); // permcheck
   }
 
   /**
@@ -929,7 +929,6 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void clearLiveBit(Address address) {
     updateLiveBit(address, false, true);
-    Permcheck.freeCell(address);
   }
 
   /**
@@ -950,7 +949,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void unsyncClearLiveBit(Address address) {
     updateLiveBit(address, false, false);
-    Permcheck.freeCell(address);
+    //Permcheck.freeCell(address);
   }
 
   /**

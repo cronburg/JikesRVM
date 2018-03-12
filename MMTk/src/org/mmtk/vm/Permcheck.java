@@ -35,7 +35,8 @@ public abstract class Permcheck {
   private static boolean error = false;
   
   @SuppressWarnings({ "static-access" })
-  private static void Mark(Address addr, int extent, byte expectedCurrType, int increment) {
+  public
+  static void a2b(Address addr, int extent, byte expectedCurrType, byte newType) {
     
     //Log.write("Mark("); Log.write(addr);
     //Log.write(", "); Log.write(extent);
@@ -44,24 +45,23 @@ public abstract class Permcheck {
     
     for (int i = 0; i < extent; i++) {
       if (!error) {
-        byte currType = VM.memory.PermcheckGetBits(0, addr.plus(i));
         
-        if (!error && currType != expectedCurrType
-          && !(increment == -1 && expectedCurrType == Type.CELL)) {
-          Log.writeln("Invalid Type transition.");
-          Log.write("  increment="); Log.writeln(increment);
-          Log.write("  shadowMap["); Log.write(addr.plus(i)); Log.write("] = ");
-          writeType(currType);
-          Log.writeln();
-          Log.write("  Expected Type = "); Log.writeln(expectedCurrType);
-          Log.flush();
-          error = true;
-          
-          VM.assertions.dumpStack();
+        if (!error) {
+          byte currType = VM.memory.PermcheckGetBits(0, addr.plus(i));
+          if (currType != expectedCurrType) {
+            Log.writeln("Invalid Type transition.");
+            Log.write("  shadowMap["); Log.write(addr.plus(i)); Log.write("] = ");
+            writeType(currType);
+            Log.writeln();
+            Log.write("  Expected Type = "); Log.writeln(expectedCurrType);
+            Log.flush();
+            error = true;
+            VM.assertions.dumpStack();
+          }
         }
       }
       // TODO: Set all bits at the same time.
-      VM.memory.PermcheckSetBits(0, addr.plus(i), (byte)(expectedCurrType + increment));
+      VM.memory.PermcheckSetBits(0, addr.plus(i), newType);
     }
   }
   
@@ -77,11 +77,11 @@ public abstract class Permcheck {
   }
 
   public static void MarkData(Address addr, int extent, byte newType) {
-    Mark(addr, extent, (byte)(newType - 1), 1);
+    a2b(addr, extent, (byte)(newType - 1), newType);
   }
     
   public static void UnmarkData(Address addr, int extent, byte oldType) {
-    Mark(addr, extent, oldType, -1);
+    a2b(addr, extent, oldType, (byte)(oldType - 1));
   }
   
   public static void CanRead(byte type, boolean flag) {
