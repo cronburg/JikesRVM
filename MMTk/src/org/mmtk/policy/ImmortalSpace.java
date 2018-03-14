@@ -198,4 +198,8 @@ import org.vmmagic.pragma.*;
     else
       return (VM.objectModel.readAvailableByte(object) & GC_MARK_BIT_MASK) == markState;
   }
+  
+  public void boot() {
+    // TODO permcheck
+  }
 }

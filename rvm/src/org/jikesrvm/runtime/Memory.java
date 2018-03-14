@@ -656,57 +656,5 @@ public class Memory {
   static int getNativeThreshold() {
     return NATIVE_THRESHOLD;
   }
-
-  public static void PermcheckInitializeMap(int shadowMapID) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckInitializeMap(shadowMapID);
-  }
-  public static void PermcheckDestroyMap(int shadowMapID) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckDestroyMap(shadowMapID);
-  }
-  public static boolean PermcheckGetBit(int shadowMapID, Address a, int offset) {
-    if (VM.runningVM)
-      return (1 == SysCall.sysCall.sysPermcheckGetBit(shadowMapID,a,offset));
-    return false;
-  }
-  public static void PermcheckUnmarkBit(int shadowMapID, Address a, int offset) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckUnmarkBit(shadowMapID,a,offset);
-  }
-  public static void PermcheckMarkBit(int shadowMapID, Address a, int offset) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckMarkBit(shadowMapID,a,offset);
-  }
-  public static void PermcheckSetBits(int shadowMapID, Address a, byte mbits) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckSetBits(shadowMapID,a,mbits);
-  }
-  public static byte PermcheckGetBits(int shadowMapID, Address a) {
-    if (VM.runningVM)
-      return SysCall.sysCall.sysPermcheckGetBits(shadowMapID,a);
-    return 0;
-  }
-  public static void PermcheckSetBytes(int shadowMapID, Address start, int size, byte mbits) {
-    if (VM.runningVM) {
-      for (int i = 0; i < size; i++) {
-        PermcheckSetBits(shadowMapID, start.plus(i), mbits);
-      }
-    }
-  }
-  public static final int FUNCTION_MAP = 6;
-  public static void PermcheckNewFunction(Address start, int size, byte[] descriptor, int[] lm, int lm_length) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckNewFunction(start, size, descriptor, descriptor.length, lm, lm_length);
-  }
-  // TODO: [karl] learn types readable and writeable in the boot image with these calls during boot image writer
-  public static void PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckCanReadType(shadowMapID, mbits, flag);
-  }
-  public static void PermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag) {
-    if (VM.runningVM)
-      SysCall.sysCall.sysPermcheckCanWriteType(shadowMapID, mbits, flag);
-  }
   
 }

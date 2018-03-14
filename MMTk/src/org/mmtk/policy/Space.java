@@ -780,5 +780,7 @@ public abstract class Space {
   public static Space[] getSpaces() {
     return spaces;
   }
-
+  
+  public abstract void boot();
+  
 }

@@ -259,5 +259,7 @@ public abstract class ObjectModel {
     return o.getArrayBaseOffset();
   }
 
-  public abstract void deinitializeHeader(ObjectReference object);
+  //public abstract void deinitializeHeader(ObjectReference object);
+  //public abstract void unmapped2StatusWord(ObjectReference o);
+  //public abstract void statusWord2Unmapped(ObjectReference o);
 }

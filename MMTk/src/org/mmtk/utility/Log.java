@@ -837,17 +837,21 @@ public class Log {
    * less than 8 then the least significant bytes are logged and some
    * of the most significant bytes are ignored.
    */
-  private static void writeHex(Word w, int bytes) {
+  public static void writeHex(Word w, int bytes) {
     int hexDigits = bytes * (1 << LOG_HEX_DIGITS_IN_BYTE);
-    int nextDigit;
 
     write(HEX_PREFIX);
 
-    for (int digitNumber = hexDigits - 1; digitNumber >= 0; digitNumber--) {
-      nextDigit = w.rshl(digitNumber << LOG_BITS_IN_HEX_DIGIT).toInt() & 0xf;
-      char nextChar = hexDigitCharacter[nextDigit];
-      add(nextChar);
-    }
+    writeHexChars(w, hexDigits);
+  }
+    
+   public static void writeHexChars(Word w, int hexDigits) {
+     int nextDigit;
+     for (int digitNumber = hexDigits - 1; digitNumber >= 0; digitNumber--) {
+       nextDigit = w.rshl(digitNumber << LOG_BITS_IN_HEX_DIGIT).toInt() & 0xf;
+       char nextChar = hexDigitCharacter[nextDigit];
+       add(nextChar);
+     }
   }
 
   /**

@@ -43,6 +43,7 @@ import org.jikesrvm.objectmodel.ITable;
 import org.jikesrvm.objectmodel.ITableArray;
 import org.jikesrvm.objectmodel.JavaHeader;
 import org.jikesrvm.objectmodel.ObjectModel;
+import org.jikesrvm.objectmodel.Permcheck;
 import org.jikesrvm.objectmodel.TIB;
 import org.jikesrvm.options.OptionSet;
 import org.jikesrvm.runtime.BootRecord;
@@ -58,7 +59,6 @@ import org.mmtk.utility.gcspy.GCspy;
 import org.mmtk.utility.heap.HeapGrowthManager;
 import org.mmtk.utility.heap.layout.HeapLayout;
 import org.mmtk.utility.options.Options;
-import org.mmtk.vm.Permcheck;
 import org.vmmagic.pragma.Entrypoint;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Interruptible;
@@ -128,6 +128,7 @@ public final class MemoryManager {
     HeapGrowthManager.boot(theBootRecord.initialHeapSize, theBootRecord.maximumHeapSize);
     DebugUtil.boot(theBootRecord);
     Selected.Plan.get().enableAllocation();
+    Permcheck.boot(theBootRecord);
     SynchronizedCounter.boot();
 
     Callbacks.addExitMonitor(new Callbacks.ExitMonitor() {

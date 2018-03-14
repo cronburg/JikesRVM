@@ -259,7 +259,7 @@ public abstract class BaselineCompiler extends TemplateCompilerFramework {
       int[] lm_dest = new int[2 * count];
       System.arraycopy(lineNumberMap, 0, lm_dest, 0, 2 * count);
 
-      org.jikesrvm.runtime.Memory.PermcheckNewFunction(
+      org.jikesrvm.objectmodel.Permcheck.newFunction(
           cm.getInstructionAddress(Offset.zero()),
           cm.getEntryCodeArray().length(),
           b,

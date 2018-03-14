@@ -815,4 +815,8 @@ public final class ImmixSpace extends Space {
   Defrag getDefrag() {
     return defrag;
   }
+  
+  public void boot() {
+    // permcheck TODO
+  }
 }

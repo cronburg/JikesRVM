@@ -359,4 +359,8 @@ import org.vmmagic.pragma.*;
     }
     BumpPointer.setNextRegion(cursor,region);
   }
+  
+  public void boot() {
+    // TODO permcheck
+  }
 }

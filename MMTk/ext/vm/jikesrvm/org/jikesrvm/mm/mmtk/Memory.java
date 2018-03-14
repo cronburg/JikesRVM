@@ -215,34 +215,34 @@ import org.vmmagic.unboxed.Offset;
 
                                                                                                                               
   public final void    PermcheckInitializeMap (int shadowMapID) {                                                             
-    org.jikesrvm.runtime.Memory.PermcheckInitializeMap(shadowMapID);                                                          
+    org.jikesrvm.objectmodel.Permcheck.initializeMap(shadowMapID);                                                          
   }                                                                                                                  
   public final void    PermcheckDestroyMap    (int shadowMapID) {                                                             
-    org.jikesrvm.runtime.Memory.PermcheckDestroyMap(shadowMapID);                                                             
+    org.jikesrvm.objectmodel.Permcheck.destroyMap(shadowMapID);                                                             
   }                                                                                                                           
   public final boolean PermcheckGetBit    (int shadowMapID, Address a, int offset) {                                          
-    return org.jikesrvm.runtime.Memory.PermcheckGetBit(shadowMapID, a, offset);                                               
+    return org.jikesrvm.objectmodel.Permcheck.getBit(shadowMapID, a, offset);                                               
   }                                                                                          
   public final void    PermcheckUnmarkBit (int shadowMapID, Address a, int offset) {                                          
-    org.jikesrvm.runtime.Memory.PermcheckUnmarkBit(shadowMapID, a, offset);                                                   
+    org.jikesrvm.objectmodel.Permcheck.unmarkBit(shadowMapID, a, offset);                                                   
   }                                                                                                                           
   public final void    PermcheckMarkBit   (int shadowMapID, Address a, int offset) {                                          
-    org.jikesrvm.runtime.Memory.PermcheckMarkBit(shadowMapID, a, offset);                                                     
+    org.jikesrvm.objectmodel.Permcheck.markBit(shadowMapID, a, offset);                                                     
   }                                                           
   public final void    PermcheckSetBits   (int shadowMapID, Address a, byte mbits) {                                          
-    org.jikesrvm.runtime.Memory.PermcheckSetBits(shadowMapID, a, mbits);                                                      
+    org.jikesrvm.objectmodel.Permcheck.setBits(shadowMapID, a, mbits);                                                      
   }                                                                            
   public final byte    PermcheckGetBits   (int shadowMapID, Address a) {                                                      
-    return org.jikesrvm.runtime.Memory.PermcheckGetBits(shadowMapID, a);                                                      
+    return org.jikesrvm.objectmodel.Permcheck.getBits(shadowMapID, a);                                                      
   }                                                                                                                           
   public final void PermcheckSetBytes(int shadowMapID, Address start, int size, byte mbits) {                                 
-    org.jikesrvm.runtime.Memory.PermcheckSetBytes(shadowMapID, start, size, mbits);                                           
+    org.jikesrvm.objectmodel.Permcheck.setBytes(shadowMapID, start, size, mbits);                                           
   }
   public final void PermcheckCanReadType(int shadowMapID, byte mbits, boolean flag) {                                 
-    org.jikesrvm.runtime.Memory.PermcheckCanReadType(shadowMapID, mbits, flag);                                           
+    org.jikesrvm.objectmodel.Permcheck.canReadType(shadowMapID, mbits, flag);                                           
   }
   public final void PermcheckCanWriteType(int shadowMapID, byte mbits, boolean flag) {                                 
-    org.jikesrvm.runtime.Memory.PermcheckCanWriteType(shadowMapID, mbits, flag);                                           
+    org.jikesrvm.objectmodel.Permcheck.canWriteType(shadowMapID, mbits, flag);                                           
   }
 
 }

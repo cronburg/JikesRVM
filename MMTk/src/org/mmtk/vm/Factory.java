@@ -119,6 +119,8 @@ public abstract class Factory {
    * @return A concrete VM-specific ObjectModel instance.
    */
   public abstract ObjectModel newObjectModel();
+  
+  public abstract Permcheck newPermcheck();
 
   /**
    * Creates a new ReferenceProcessor instance using the appropriate VM-specific

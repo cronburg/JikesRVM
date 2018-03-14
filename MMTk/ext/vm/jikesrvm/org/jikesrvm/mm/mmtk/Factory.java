@@ -124,6 +124,16 @@ public final class Factory extends org.mmtk.vm.Factory {
       return null; // never get here
     }
   }
+  
+  @Override
+  public org.mmtk.vm.Permcheck newPermcheck() {
+    try {
+      return new Permcheck();
+    } catch (Exception e) {
+      VM.sysFail("Failed to allocate new Permcheck!");
+      return null; // never get here
+    }
+  }
 
   @Override
   public org.mmtk.vm.ReferenceProcessor newReferenceProcessor(Semantics semantics) {

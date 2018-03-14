@@ -255,5 +255,9 @@ import org.vmmagic.pragma.*;
    */
    @Inline
    public void postAlloc(ObjectReference object) {}
+   
+   public void boot() {
+     // TODO permcheck
+   }
 
 }

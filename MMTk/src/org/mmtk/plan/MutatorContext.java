@@ -125,6 +125,10 @@ public abstract class MutatorContext {
   /** Per-mutator allocator into the non moving space */
   protected final MarkSweepLocal nonmove = new MarkSweepLocal(Plan.nonMovingSpace);
 
+  public void bootPermcheck() {
+    smcode.bootPermcheck();
+    nonmove.bootPermcheck();
+  }
 
   /****************************************************************************
    *

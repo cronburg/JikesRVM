@@ -13,7 +13,7 @@
 package org.mmtk.utility.alloc;
 
 import org.mmtk.policy.SegregatedFreeListSpace;
-
+import org.mmtk.utility.Log;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -159,6 +159,23 @@ public abstract class SegregatedFreeListLocal<S extends SegregatedFreeListSpace>
         space.returnBlock(block, sizeClass, cell);
         currentBlock.set(sizeClass, Address.zero());
         freeList.set(sizeClass, Address.zero());
+      }
+    }
+  }
+  
+  public void bootPermcheck() {
+    for (int sizeClass = 0; sizeClass < SegregatedFreeListSpace.sizeClassCount(); sizeClass++) {
+      // All of these are null at boot time:
+      Address block = currentBlock.get(sizeClass);
+//      Log.writeln("boot] block = ", block);
+      if (!block.isZero()) {
+        ((SegregatedFreeListSpace)this.getSpace()).bootBlock(block, sizeClass);
+      }
+      // These are also all null at boot time:
+      block = freeList.get(sizeClass);
+      //Log.writeln("boot] block = ", block);
+      if (!block.isZero()) {
+        ((SegregatedFreeListSpace)this.getSpace()).bootBlock(block, sizeClass);
       }
     }
   }

@@ -82,4 +82,8 @@ public final class RawPageSpace extends Space {
   public boolean isLive(ObjectReference object) {
     return true;
   }
+  
+  public void boot() {
+    // TODO permcheck
+  }
 }

@@ -20,6 +20,7 @@ import org.mmtk.utility.heap.FreeListPageResource;
 import org.mmtk.utility.heap.VMRequest;
 import org.mmtk.utility.heap.layout.HeapLayout;
 import org.mmtk.utility.Conversions;
+import org.mmtk.utility.Log;
 import org.mmtk.utility.Memory;
 
 import org.mmtk.vm.Lock;
@@ -165,7 +166,7 @@ public abstract class SegregatedFreeListSpace extends Space {
 
   /**
    * Acquire a new block from the global pool to allocate into. This method
-   * with either return a non-empty free list, or zero when allocation
+   * will either return a non-empty free list, or zero when allocation
    * fails.
    *
    * This method will populate the passed in free list for the given size
@@ -579,6 +580,54 @@ public abstract class SegregatedFreeListSpace extends Space {
       availableBlockHead.set(sizeClass, Address.zero());
     }
   }
+  
+  public void bootBlock(Address block, int sizeClass) {
+    while (!block.isZero()) {
+      Extent blockSize = Extent.fromIntSignExtend(BlockAllocator.blockSize(blockSizeClass[sizeClass]));
+      Address cursor = block.plus(blockHeaderSize[sizeClass]);
+      Address end = block.plus(blockSize);
+      Extent cellExtent = Extent.fromIntSignExtend(cellSize[sizeClass]);
+      while (cursor.LT(end)) {
+        ObjectReference current = VM.objectModel.getObjectFromStartAddress(cursor);
+        if (!current.isNull()) {
+          VM.permcheck.bootRef(current, cellExtent);
+        }
+        cursor = cursor.plus(cellExtent);
+      }
+      
+      block = BlockAllocator.getNext(block);
+    }
+  }
+  
+  public void boot() {
+    // These are all null, but keep here for now for sanity check...
+    for (int sizeClass = 0; sizeClass < sizeClassCount(); sizeClass++) {
+      //Log.writeln("availableBlockHead: ", availableBlockHead.get(sizeClass));
+      //Log.writeln("flushedBlockHead: ", flushedBlockHead.get(sizeClass));
+      //Log.writeln("consumedBlockHead: ", consumedBlockHead.get(sizeClass));
+      bootBlock(availableBlockHead.get(sizeClass), sizeClass);
+      bootBlock(flushedBlockHead.get(sizeClass), sizeClass);
+      bootBlock(consumedBlockHead.get(sizeClass), sizeClass);
+    }
+    /*
+    Extent blockSize = Extent.fromIntSignExtend(BlockAllocator.blockSize(blockSizeClass[sizeClass]));
+    Address cursor = block.plus(blockHeaderSize[sizeClass]);
+    Address end = block.plus(blockSize);
+    Extent cellExtent = Extent.fromIntSignExtend(cellSize[sizeClass]);
+    boolean containsLive = false;
+    while (cursor.LT(end)) {
+      ObjectReference current = VM.objectModel.getObjectFromStartAddress(cursor);
+      boolean free = true;
+      if (!current.isNull()) {
+        free = !liveBitSet(current);
+        if (!free) {
+          free = sweeper.sweepCell(current);
+          if (free) unsyncClearLiveBit(current);
+        }
+      }
+      cursor = cursor.plus(cellExtent);
+    }*/
+  }
 
   /**
    * Does this block contain any live cells.
@@ -666,6 +715,9 @@ public abstract class SegregatedFreeListSpace extends Space {
       boolean free = true;
       if (!current.isNull()) {
         free = !isCellLive(current);
+        if (free) {
+          VM.permcheck.statusWord2Unmapped(current);
+        }
       }
       if (free) {
         if (firstFree.isZero()) {
@@ -674,6 +726,7 @@ public abstract class SegregatedFreeListSpace extends Space {
           lastFree.store(cursor);
         }
         Memory.zeroSmall(cursor, cellExtent);
+
         //Permcheck.UnmarkData(cursor, cellExtent.toInt(), Permcheck.Type.CELL);
         lastFree = cursor;
       }
@@ -918,7 +971,7 @@ public abstract class SegregatedFreeListSpace extends Space {
   @Inline
   protected static void clearLiveBit(ObjectReference object) {
     clearLiveBit(VM.objectModel.refToAddress(object));
-    VM.objectModel.deinitializeHeader(object); // permcheck
+    //VM.objectModel.deinitializeHeader(object); // permcheck
   }
 
   /**

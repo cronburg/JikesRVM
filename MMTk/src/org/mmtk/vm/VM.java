@@ -107,6 +107,8 @@ public final class VM {
   @Untraced
   public static final ObjectModel objectModel;
   @Untraced
+  public static final Permcheck permcheck;
+  @Untraced
   public static final ReferenceProcessor weakReferences;
   @Untraced
   public static final ReferenceProcessor softReferences;
@@ -161,6 +163,7 @@ public final class VM {
     collection = factory.newCollection();
     memory = factory.newMemory();
     objectModel = factory.newObjectModel();
+    permcheck = factory.newPermcheck();
     Options.set = factory.getOptionSet();
     weakReferences = factory.newReferenceProcessor(ReferenceProcessor.Semantics.WEAK);
     softReferences = factory.newReferenceProcessor(ReferenceProcessor.Semantics.SOFT);

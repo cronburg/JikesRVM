@@ -19,7 +19,6 @@ import org.mmtk.utility.heap.FreeListPageResource;
 import org.mmtk.utility.heap.VMRequest;
 import org.mmtk.utility.HeaderByte;
 import org.mmtk.utility.Treadmill;
-
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -136,6 +135,7 @@ public final class LargeObjectSpace extends BaseLargeObjectSpace {
     while (true) {
       Address cell = sweepNursery ? treadmill.popNursery() : treadmill.pop();
       if (cell.isZero()) break;
+      VM.permcheck.statusWord2Unmapped(Treadmill.nodeToPayload(cell));
       release(getSuperPage(cell));
     }
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(sweepNursery ? treadmill.nurseryEmpty() : treadmill.fromSpaceEmpty());
@@ -293,5 +293,9 @@ public final class LargeObjectSpace extends BaseLargeObjectSpace {
    */
   public Treadmill getTreadmill() {
     return this.treadmill;
+  }
+  
+  public void boot() {
+    // TODO permcheck
   }
 }

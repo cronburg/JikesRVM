@@ -198,4 +198,8 @@ public final class ExplicitLargeObjectSpace extends BaseLargeObjectSpace {
   public abstract static class Sweeper {
     public abstract boolean sweepLargeObject(ObjectReference object);
   }
+  
+  public void boot() {
+    // TODO permcheck
+  }
 }

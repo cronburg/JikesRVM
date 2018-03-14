@@ -246,7 +246,7 @@ public final class BlockAllocator {
   }
 
   /**
-   * Set the <i>prev</i> meta data field for a given address
+   * Set the <i>next</i> meta data field for a given address
    *
    * @param address The address of interest
    * @param prev The value to which this field is to be set
@@ -257,10 +257,10 @@ public final class BlockAllocator {
   }
 
   /**
-   * Get the <i>prev</i> meta data field for a given address
+   * Get the <i>next</i> meta data field for a given address
    *
    * @param address The address of interest
-   * @return The prev field for the block containing the given address
+   * @return The next field for the block containing the given address
    */
   @Inline
   public static Address getNext(Address address) {
