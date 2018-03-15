@@ -13,6 +13,7 @@
 package org.mmtk.utility.heap;
 
 import static org.mmtk.utility.heap.layout.VMLayoutConstants.*;
+
 import static org.mmtk.utility.Constants.LOG_BYTES_IN_PAGE;
 
 import org.mmtk.plan.Plan;
@@ -22,6 +23,7 @@ import org.mmtk.utility.GenericFreeList;
 import org.mmtk.utility.Log;
 import org.mmtk.utility.alloc.EmbeddedMetaData;
 import org.mmtk.utility.heap.layout.HeapLayout;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Interruptible;
@@ -185,6 +187,7 @@ public final class FreeListPageResource extends PageResource {
       if (zeroed)
         VM.memory.zero(zeroNT, rtn, bytes);
       VM.events.tracePageAcquired(space, rtn, requiredPages);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.PAGE_OR_UNMAPPED_OR_FREEPAGE, Permcheck.Type.PAGE);
       return rtn;
     }
   }
@@ -224,6 +227,7 @@ public final class FreeListPageResource extends PageResource {
 
     unlock();
 
+    VM.permcheck.a2b(first, Conversions.pagesToBytes(pages), Permcheck.PAGE_OR_UNMAPPED_OR_FREEPAGE, Permcheck.Type.FREE_PAGE);
     VM.events.tracePageReleased(space, first, pages);
   }
 

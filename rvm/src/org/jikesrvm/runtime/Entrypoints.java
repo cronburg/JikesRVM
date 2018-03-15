@@ -188,6 +188,9 @@ public class Entrypoints {
                "I2Dconstant",
                double.class);
 
+  public static final RVMField permcheckLockField =
+      getField(org.jikesrvm.objectmodel.Permcheck.class, "lock", int.class);
+  
   public static final RVMField bootThreadField =
     getField(org.jikesrvm.scheduler.RVMThread.class, "bootThread",
              org.jikesrvm.scheduler.RVMThread.class);

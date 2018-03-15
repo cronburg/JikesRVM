@@ -53,6 +53,7 @@ import org.mmtk.plan.CollectorContext;
 import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.utility.Constants;
+import org.mmtk.utility.Log;
 import org.mmtk.utility.Memory;
 import org.mmtk.utility.alloc.Allocator;
 import org.mmtk.utility.gcspy.GCspy;

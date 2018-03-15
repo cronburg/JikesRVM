@@ -5,18 +5,24 @@ import org.jikesrvm.VM;
 import org.jikesrvm.mm.mminterface.Selected;
 import org.jikesrvm.mm.mmtk.ActivePlan;
 import org.jikesrvm.runtime.BootRecord;
+import org.jikesrvm.runtime.Entrypoints;
 import org.jikesrvm.runtime.Magic;
 import org.jikesrvm.runtime.SysCall;
 import org.jikesrvm.scheduler.RVMThread;
+import org.jikesrvm.scheduler.Synchronization;
 import org.mmtk.plan.MutatorContext;
 import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.policy.Space.SpaceVisitor;
+import org.mmtk.utility.Constants;
 import org.mmtk.utility.Log;
+import org.mmtk.vm.Lock;
+import org.vmmagic.pragma.Entrypoint;
 import org.vmmagic.pragma.Uninterruptible;
 import org.vmmagic.unboxed.Address;
 import org.vmmagic.unboxed.Extent;
 import org.vmmagic.unboxed.ObjectReference;
+import org.vmmagic.unboxed.Offset;
 import org.vmmagic.unboxed.Word;
 
 @Uninterruptible
@@ -31,6 +37,8 @@ public class Permcheck {
     public static final byte BLOCK = 0x03;
     public static final byte CELL = 0x04;
     public static final byte STATUS_WORD = 0x05;
+    public static final byte BLOCK_META = 0x06;
+    public static final byte FREE_PAGE = 0x07;
   }
   
   private static void writeType(byte type) {
@@ -41,8 +49,43 @@ public class Permcheck {
     	case Type.BLOCK: Log.write("BLOCK"); break;
     	case Type.CELL:  Log.write("CELL");  break;
     	case Type.STATUS_WORD: Log.write("STATUS_WORD"); break;
+      case Type.BLOCK_META: Log.write("BLOCK_META"); break;
+      case Type.FREE_PAGE: Log.write("FREE_PAGE"); break;
     	default: Log.write(type);
     }
+  }
+  
+  @Entrypoint
+  protected static int lock = 0;
+  
+  private static Offset lockOffset = Offset.max();
+  
+  private static void acquireLock() {
+    if (!lockOffset.isMax()) {
+      while(!Synchronization.testAndSet(Magic.getJTOC(), lockOffset, 1)) {
+        ;
+      }
+    }
+  }
+  
+  private static void releaseLock() {
+    if (!lockOffset.isMax()) {
+      Synchronization.fetchAndStore(Magic.getJTOC(), lockOffset, 0);
+    }
+  }
+  
+  private static void writeTypes(byte[] types) {
+    Log.write("(");
+    for (int k = 0; k < types.length; k++) {
+      writeType(types[k]);
+      if (k != types.length - 1)
+        Log.write(",");
+    }
+    Log.write(")");
+  }
+  
+  private static void writeTypes(byte type) {
+    writeType(type);
   }
   
   private static boolean error = false;
@@ -50,50 +93,127 @@ public class Permcheck {
   @SuppressWarnings({ "static-access" })
   public
   static void a2b(Address addr, int extent, byte expectedCurrType, byte newType) {
+    a2b(addr, extent, expectedCurrType, newType, true);
+  }
+  
+  @SuppressWarnings({ "static-access" })
+  public
+  static void a2b(Address addr, int extent, byte expectedCurrType, byte newType, boolean check) {
+    many2bCheck(addr, extent, null, expectedCurrType, newType, check);
+  }
+  
+  public static void many2b(Address plus, int bytesInWord, byte[] bs, byte newType) {
+    many2bCheck(plus, bytesInWord, bs, (byte)0, newType, true);
+  }
+  
+  private static void writeSurroundingPage(Address addr, int extent, int faultOffset) {
+    int maxOffset = 128;
+    while (extent > maxOffset) {
+      maxOffset += 128;
+    }
+    for (int m = -128; m < maxOffset; m++) {
+      byte ty = getBits(0, addr.plus(m));
+      if (m % 64 == 0) {
+        Log.writeln();
+        Log.write(addr.plus(m));
+        Log.write(": ");
+      }
+      Log.writeHexChars(Word.fromIntZeroExtend(ty), 1);
+    }
+  }
+  
+  private static void writeBad(Address addr, byte[] expectedCurrTypes, byte newType, byte currType, int i, int j, int extent) {
+    Log.write("[chisel]: Bad transition from ");
+    writeTypes(expectedCurrTypes);
+    Log.write("->");
+    writeType(newType);
+    Log.writeln(",");
+    Log.write("          expected ");
+    writeTypes(expectedCurrTypes);
+    Log.write(" but got ");
+    writeType(currType);
+    Log.writeln(".");
+    Log.write("          Faulting Address: ", addr.plus(i));
+    Log.write(", ", i);
+    Log.write(" bytes into [", addr);
+    Log.write(",", addr.plus(extent));
+    Log.writeln(")");
+    Log.writeln("          nbytes = ", extent);
+    
+    writeSurroundingPage(addr, extent, i);
+    
+    Log.flush();
+    error = true;
+    RVMThread.dumpStack();
+  }
+  
+  private static void writeBad(Address addr, byte expectedCurrType, byte newType, byte currType, int i, int extent) {
+    Log.write("[chisel]: Bad transition from ");
+    writeTypes(expectedCurrType);
+    Log.write("->");
+    writeType(newType);
+    Log.writeln(",");
+    Log.write("          expected ");
+    writeTypes(expectedCurrType);
+    Log.write(" but got ");
+    writeType(currType);
+    Log.writeln(".");
+    Log.write("          Faulting Address: ", addr.plus(i));
+    Log.write(", ", i);
+    Log.write(" bytes into [", addr);
+    Log.write(",", addr.plus(extent));
+    Log.writeln(")");
+    Log.writeln("          nbytes = ", extent);
+    
+    writeSurroundingPage(addr, extent, i);
+    
+    Log.flush();
+    error = true;
+    RVMThread.dumpStack();
+  }
+  
+  @SuppressWarnings({ "static-access" })
+  private static void many2bCheck(Address addr, int extent, byte[] expectedCurrTypes, byte expectedCurrType, byte newType, boolean check) {
+    acquireLock();
+    //if (!VM.fullyBooted)
+    // return;
     
     //Log.write("Mark("); Log.write(addr);
     //Log.write(", "); Log.write(extent);
     //Log.write(", "); Log.write(expectedCurrType);
     //Log.write(", "); Log.write(increment); Log.writeln(")");
     
+    
+    
     for (int i = 0; i < extent; i++) {
-      if (!error) {
+      if (!error && check) {
+        byte currType = getBits(0, addr.plus(i));
         
-        if (!error) {
-          byte currType = getBits(0, addr.plus(i));
+        if (expectedCurrTypes == null) {
           if (currType != expectedCurrType) {
-            Log.writeln("Invalid Type transition.");
-            Log.write("  shadowMap["); Log.write(addr.plus(i)); Log.write("] = ");
-            writeType(currType);
-            Log.writeln();
-            Log.write("  Expected Type = ");
-            writeType(expectedCurrType);
-            
-            for (int j = -2048; j < 2048; j++) {
-              byte ty = getBits(0, addr.plus(j));
-              if (j % 64 == 0) {
-                Log.writeln();
-                Log.write(addr.plus(j));
-                Log.write(": ");
-              }
-              Log.writeHexChars(Word.fromIntZeroExtend(ty), 1);
+            writeBad(addr, expectedCurrType, newType, currType, i, extent);
+          }
+        } else {
+          for (int j = 0; j < expectedCurrTypes.length; j++) {
+            if (currType == expectedCurrTypes[j]) break;
+            if (j == expectedCurrTypes.length - 1) {
+              Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
+              writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
             }
-            
-            Log.flush();
-            error = true;
-            RVMThread.dumpStack();
           }
         }
       }
       // TODO: Set all bits at the same time.
       setBits(0, addr.plus(i), newType);
     }
+    releaseLock();
   }
   
   public static void freeCell(ObjectReference object) {
-  	Address endAddr = ObjectModel.getObjectEndAddress(object);
-    Address startAddr = ObjectModel.objectStartRef(object);
-    unmarkData(startAddr, endAddr.minus(startAddr.toInt()).toInt(), Type.CELL);
+  	//Address endAddr = ObjectModel.getObjectEndAddress(object);
+    //Address startAddr = ObjectModel.objectStartRef(object);
+    statusWord2Block(object);
+    //unmarkData(startAddr, endAddr.minus(startAddr.toInt()).toInt(), Type.CELL);
   }
   
   public static void freeCell(Address addr) {
@@ -121,19 +241,19 @@ public class Permcheck {
     canWrite(type, flag);
   }
 
-  public static void statusWord2Unmapped(Address addr) {
+  public static void statusWord2Block(Address addr) {
     ObjectReference ref = ObjectModel.getObjectFromStartAddress(addr);
-    statusWord2Unmapped(ref);
+    statusWord2Block(ref);
   }
   
-  public static void deinitializeHeader(ObjectReference object) {
-    org.jikesrvm.objectmodel.JavaHeader.deinitializeHeader(object);
+  protected static final Offset STATUS_OFFSET = org.jikesrvm.objectmodel.JavaHeader.getStatusOffset();
+  
+  public static void block2StatusWord(ObjectReference o) {
+    Permcheck.a2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.UNMAPPED, Permcheck.Type.STATUS_WORD);
   }
-  public static void unmapped2StatusWord(ObjectReference o) {
-    org.jikesrvm.objectmodel.JavaHeader.unmapped2StatusWord(o);
-  }
-  public static void statusWord2Unmapped(ObjectReference o) {
-    org.jikesrvm.objectmodel.JavaHeader.statusWord2Unmapped(o);
+  private static byte[] swORb = {Type.STATUS_WORD, Type.BLOCK, Type.UNMAPPED};
+  public static void statusWord2Block(ObjectReference o) {
+    Permcheck.many2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, swORb, Type.BLOCK);
   }
 
   public static void initializeMap(int shadowMapID) {
@@ -198,8 +318,12 @@ public class Permcheck {
   }
 
   public static final int FUNCTION_MAP = 6;
+  public static final byte[] BLOCK_OR_PAGE = {Type.BLOCK, Type.PAGE};
   
   public static void boot(BootRecord the_boot_record) {
+    
+    lockOffset = Entrypoints.permcheckLockField.getOffset();
+    
     //Space.visitSpaces(v);
     //Plan p = Selected.Plan.get();
     Plan.vmSpace.boot();
@@ -228,9 +352,26 @@ public class Permcheck {
         && tib.length() > 0
         && Space.isMappedObject(ObjectReference.fromObject(tib.getType()))) {
         
-        unmapped2StatusWord(current);
-        Log.writeln("boot] tib=", Magic.objectAsAddress(tib));
-        Log.flush();
+      a2b(current.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Type.BLOCK, Type.STATUS_WORD, false);
+      Log.writeln("boot] tib=", Magic.objectAsAddress(tib));
+      Log.flush();
     }
   }
+
+  public static void a2b(Address rtn, Extent bytes, byte from, byte to) {
+    a2b(rtn, bytes.toInt(), from, to);
+  }
+
+  public static void a2b(Address rtn, Extent bytes, byte[] from, byte to) {
+    many2b(rtn, bytes.toInt(), from, to);
+  }
+
+  public static void a2b(Address address, int bytes, byte[] from, byte to) {
+    many2b(address, bytes, from, to);
+  }
+
+  public static void statusWord2Page(Address address) {
+    a2b(address.plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Type.STATUS_WORD, Type.PAGE);
+  }
+  
 }

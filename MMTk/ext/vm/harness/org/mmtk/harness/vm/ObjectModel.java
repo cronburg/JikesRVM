@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Collection;
 
+import org.jikesrvm.objectmodel.Permcheck;
 import org.mmtk.harness.Mutator;
 import org.mmtk.harness.lang.Trace;
 import org.mmtk.harness.lang.Trace.Item;
@@ -29,6 +30,7 @@ import org.mmtk.plan.MutatorContext;
 import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.utility.alloc.Allocator;
+import org.mmtk.vm.VM;
 import org.vmmagic.pragma.Uninterruptible;
 import org.vmmagic.unboxed.*;
 import org.vmmagic.unboxed.harness.ArchitecturalWord;
@@ -570,6 +572,7 @@ public final class ObjectModel extends org.mmtk.vm.ObjectModel {
       Trace.printf(Item.AVBYTE,"%s.gcbyte:%d->%d%n", getString(object),old,val);
     }
     Clock.start();
+    //VM.permcheck.a2b(object.toAddress().plus(STATUS_OFFSET), BYTES_IN_WORD, Permcheck.Type.STATUS_WORD, Permcheck.Type.STATUS_WORD, false);
     object.toAddress().store(val, STATUS_OFFSET);
   }
 

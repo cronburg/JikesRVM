@@ -17,8 +17,10 @@ import static org.mmtk.utility.Constants.LOG_BYTES_IN_PAGE;
 import org.mmtk.plan.TransitiveClosure;
 import org.mmtk.utility.heap.FreeListPageResource;
 import org.mmtk.utility.heap.VMRequest;
+import org.mmtk.utility.Constants;
 import org.mmtk.utility.HeaderByte;
 import org.mmtk.utility.Treadmill;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -135,7 +137,8 @@ public final class LargeObjectSpace extends BaseLargeObjectSpace {
     while (true) {
       Address cell = sweepNursery ? treadmill.popNursery() : treadmill.pop();
       if (cell.isZero()) break;
-      VM.permcheck.statusWord2Unmapped(Treadmill.nodeToPayload(cell));
+      //VM.permcheck.statusWord2Unmapped(Treadmill.nodeToPayload(cell));
+      VM.permcheck.statusWord2Page(VM.objectModel.getObjectFromStartAddress(Treadmill.nodeToPayload(cell)).toAddress());
       release(getSuperPage(cell));
     }
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(sweepNursery ? treadmill.nurseryEmpty() : treadmill.fromSpaceEmpty());

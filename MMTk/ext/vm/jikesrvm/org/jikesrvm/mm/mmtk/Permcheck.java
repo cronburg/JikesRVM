@@ -49,23 +49,13 @@ public final class Permcheck extends org.mmtk.vm.Permcheck {
   }
 
   @Override
-  public void statusWord2Unmapped(Address addr) {
-    org.jikesrvm.objectmodel.Permcheck.statusWord2Unmapped(addr);
+  public void statusWord2Block(Address addr) {
+    org.jikesrvm.objectmodel.Permcheck.statusWord2Block(addr);
   }
 
   @Override
-  public void deinitializeHeader(ObjectReference object) {
-    org.jikesrvm.objectmodel.Permcheck.statusWord2Unmapped(object);
-  }
-
-  @Override
-  public void unmapped2StatusWord(ObjectReference o) {
-    org.jikesrvm.objectmodel.Permcheck.unmapped2StatusWord(o);
-  }
-
-  @Override
-  public void statusWord2Unmapped(ObjectReference o) {
-    org.jikesrvm.objectmodel.Permcheck.statusWord2Unmapped(o);
+  public void block2StatusWord(ObjectReference o) {
+    org.jikesrvm.objectmodel.Permcheck.block2StatusWord(o);
   }
 
   @Override
@@ -126,6 +116,36 @@ public final class Permcheck extends org.mmtk.vm.Permcheck {
   @Override
   public void bootRef(ObjectReference current, Extent cellExtent) {
     org.jikesrvm.objectmodel.Permcheck.bootRef(current, cellExtent);
+  }
+
+  @Override
+  public void a2b(Address address, int extent, byte expectedCurrType, byte newType, boolean b) {
+    org.jikesrvm.objectmodel.Permcheck.a2b(address, extent, expectedCurrType, newType, b);
+  }
+
+  @Override
+  public void statusWord2Block(ObjectReference o) {
+    org.jikesrvm.objectmodel.Permcheck.statusWord2Block(o);
+  }
+
+  @Override
+  public void a2b(Address rtn, Extent bytes, byte from, byte to) {
+    org.jikesrvm.objectmodel.Permcheck.a2b(rtn, bytes, from, to);
+  }
+
+  @Override
+  public void a2b(Address rtn, Extent bytes, byte[] from, byte to) {
+    org.jikesrvm.objectmodel.Permcheck.a2b(rtn, bytes, from, to);
+  }
+
+  @Override
+  public void a2b(Address address, int bytes, byte[] from, byte to) {
+    org.jikesrvm.objectmodel.Permcheck.a2b(address, bytes, from, to);
+  }
+
+  @Override
+  public void statusWord2Page(Address address) {
+    org.jikesrvm.objectmodel.Permcheck.statusWord2Page(address);
   }
 
 }

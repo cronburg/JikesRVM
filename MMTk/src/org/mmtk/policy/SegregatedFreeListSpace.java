@@ -24,6 +24,7 @@ import org.mmtk.utility.Log;
 import org.mmtk.utility.Memory;
 
 import org.mmtk.vm.Lock;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -716,7 +717,8 @@ public abstract class SegregatedFreeListSpace extends Space {
       if (!current.isNull()) {
         free = !isCellLive(current);
         if (free) {
-          VM.permcheck.statusWord2Unmapped(current);
+          //VM.permcheck.statusWord2Unmapped(current);
+          VM.permcheck.freeCell(current);
         }
       }
       if (free) {
