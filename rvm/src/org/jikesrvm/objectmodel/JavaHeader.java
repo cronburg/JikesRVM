@@ -758,7 +758,10 @@ public class JavaHeader {
    * @return the available bits bytes
    */
   public static byte readAvailableByte(Object o) {
-    return Magic.getByteAtOffset(o, AVAILABLE_BITS_OFFSET);
+    Permcheck.canRead(Permcheck.Type.STATUS_WORD, true);
+    byte ret = Magic.getByteAtOffset(o, AVAILABLE_BITS_OFFSET);
+    Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
+    return ret;
   }
 
   /**

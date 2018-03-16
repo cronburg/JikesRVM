@@ -83,10 +83,10 @@ public final class BlockAllocator {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert((blockSizeClass >= 0) && (blockSizeClass <= MAX_BLOCK_SIZE_CLASS));
     int pages = pagesForSizeClass(blockSizeClass);
     Address result = space.acquire(pages);
-    VM.permcheck.a2b(result, pages << VM.LOG_BYTES_IN_PAGE, Permcheck.Type.PAGE, Permcheck.Type.BLOCK);
-    VM.permcheck.a2b(getMetaAddress(result), BYTES_IN_BLOCK_META, Permcheck.PAGE_OR_UNMAPPED, Permcheck.Type.BLOCK_META);
     if (!result.isZero()) {
       setBlkSizeMetaData(result, (byte) blockSizeClass);
+      VM.permcheck.a2b(result, pages << VM.LOG_BYTES_IN_PAGE, Permcheck.Type.PAGE, Permcheck.Type.BLOCK);
+      //VM.permcheck.a2b(getMetaAddress(result), BYTES_IN_BLOCK_META, Permcheck.PAGE_OR_UNMAPPED, Permcheck.Type.BLOCK_META);
     }
     return result;
   }
@@ -100,7 +100,6 @@ public final class BlockAllocator {
    * @param block The address of the block to be freed
    */
   public static void free(Space space, Address block) {
-
     VM.permcheck.a2b(getMetaAddress(block), BYTES_IN_BLOCK_META, Permcheck.Type.BLOCK_META, Permcheck.Type.BLOCK);
     VM.permcheck.a2b(block, blockSize(getBlkSizeClass(block)), Permcheck.BLOCK_OR_HIGHER, Permcheck.Type.PAGE);
     space.release(block);
@@ -153,7 +152,9 @@ public final class BlockAllocator {
     for (int i = 0; i < pagesForSizeClass(sc); i++) {
       byte value = (byte) ((i << BLOCK_PAGE_OFFSET_SHIFT) | sc);
       VM.permcheck.a2b(getMetaAddress(address), BYTES_IN_BLOCK_META, Permcheck.Type.BLOCK_META, Permcheck.Type.BLOCK_META, false);
+      VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, true);
       getMetaAddress(address).store(value, BMD_OFFSET);
+      VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, false);
       if (VM.VERIFY_ASSERTIONS) {
         VM.assertions._assert(getBlkStart(address).EQ(block));
         VM.assertions._assert(getBlkSizeClass(address) == sc);
@@ -173,7 +174,9 @@ public final class BlockAllocator {
   @Inline
   private static byte getBlkSizeClass(Address address) {
     address = Conversions.pageAlign(address);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, true);
     byte rtn = (byte) (getMetaAddress(address).loadByte(BMD_OFFSET) & BLOCK_SC_MASK);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, false);
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(rtn >= 0 && rtn <= MAX_BLOCK_SIZE_CLASS);
     return rtn;
   }
@@ -188,7 +191,9 @@ public final class BlockAllocator {
   @Inline
   public static Address getBlkStart(Address address) {
     address = Conversions.pageAlign(address);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, true);
     byte offset = (byte) (getMetaAddress(address).loadByte(BMD_OFFSET) >>> BLOCK_PAGE_OFFSET_SHIFT);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, false);
     return address.minus(offset << LOG_BYTES_IN_PAGE);
   }
 
@@ -223,7 +228,9 @@ public final class BlockAllocator {
   @Inline
   public static byte getClientSizeClass(Address address) {
     address = Conversions.pageAlign(address);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, true);
     byte rtn = getMetaAddress(address).loadByte(CSC_OFFSET);
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, false);
     return rtn;
   }
 
@@ -264,7 +271,9 @@ public final class BlockAllocator {
   @Inline
   public static void setNext(Address address, Address prev) {
     //VM.permcheck.a2b(address, BYTES_IN_BLOCK_META, Permcheck.Type.BLOCK_META, Permcheck.Type.BLOCK_META, false);
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, true);
     getMetaAddress(address, NEXT_OFFSET).store(prev);
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, false);
   }
 
   /**
@@ -275,7 +284,10 @@ public final class BlockAllocator {
    */
   @Inline
   public static Address getNext(Address address) {
-    return getMetaAddress(address, NEXT_OFFSET).loadAddress();
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, true);
+    Address ret = getMetaAddress(address, NEXT_OFFSET).loadAddress();
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, false);
+    return ret;
   }
 
   /**
@@ -319,7 +331,9 @@ public final class BlockAllocator {
    */
   @Inline
   public static void markBlockMeta(ObjectReference ref) {
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, true);
     getMetaAddress(VM.objectModel.refToAddress(ref)).plus(FL_META_OFFSET).store(Word.one());
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, false);
   }
 
   /**
@@ -329,7 +343,9 @@ public final class BlockAllocator {
    */
   @Inline
   public static void markBlockMeta(Address block) {
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, true);
     getMetaAddress(block).plus(FL_META_OFFSET).store(Word.one());
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, false);
   }
 
   /**
@@ -340,7 +356,10 @@ public final class BlockAllocator {
    */
   @Inline
   public static boolean checkBlockMeta(Address block) {
-    return getMetaAddress(block).plus(FL_META_OFFSET).loadWord().EQ(Word.one());
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, true);
+    boolean ret = getMetaAddress(block).plus(FL_META_OFFSET).loadWord().EQ(Word.one());
+    VM.permcheck.canRead(Permcheck.Type.BLOCK_META, false);
+    return ret;
   }
 
   /**
@@ -350,6 +369,8 @@ public final class BlockAllocator {
    */
   @Inline
   public static void clearBlockMeta(Address block) {
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, true);
     getMetaAddress(block).plus(FL_META_OFFSET).store(Word.zero());
+    VM.permcheck.canWrite(Permcheck.Type.BLOCK_META, false);
   }
 }
