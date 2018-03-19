@@ -112,9 +112,10 @@ EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz)
 }
 
 EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor, int descr_length, int* line_numbers, int line_numbers_length) {
+  int i;
   /* Intercepted by PIN tool */
   sysPermcheckRegisterFunction(start, size, descriptor, descr_length);
-  for (int i = 0; i < line_numbers_length; i++) {
+  for (i = 0; i < line_numbers_length; i++) {
     sysPermcheckRegisterLineNumber((Address)(start + i), line_numbers[2 * i], line_numbers[2 * i + 1]);
   }
 }
