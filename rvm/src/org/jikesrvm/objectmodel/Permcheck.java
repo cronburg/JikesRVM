@@ -176,8 +176,8 @@ public class Permcheck {
   @SuppressWarnings({ "static-access" })
   private static void many2bCheck(Address addr, int extent, byte[] expectedCurrTypes, byte expectedCurrType, byte newType, boolean check) {
     acquireLock();
-    //if (!VM.fullyBooted)
-    // return;
+    if (!VM.fullyBooted)
+     return;
     
     //Log.write("Mark("); Log.write(addr);
     //Log.write(", "); Log.write(extent);
