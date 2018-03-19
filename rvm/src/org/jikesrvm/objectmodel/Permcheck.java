@@ -36,6 +36,7 @@ public class Permcheck {
     public static final byte SPACE = 0x02;
     public static final byte BLOCK = 0x03;
     public static final byte CELL = 0x04;
+    public static final byte LOCK_WORD = 0x05;
     public static final byte STATUS_WORD = 0x05;
     public static final byte BLOCK_META = 0x06;
     public static final byte FREE_PAGE = 0x07;

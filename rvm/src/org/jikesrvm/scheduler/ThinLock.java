@@ -28,6 +28,7 @@ import static org.jikesrvm.objectmodel.ThinLockConstants.TL_THREAD_ID_SHIFT;
 import static org.jikesrvm.objectmodel.ThinLockConstants.TL_UNLOCK_MASK;
 
 import org.jikesrvm.VM;
+import org.jikesrvm.objectmodel.Permcheck;
 import org.jikesrvm.runtime.Magic;
 import org.jikesrvm.util.Services;
 import org.vmmagic.pragma.Entrypoint;
@@ -55,7 +56,9 @@ public final class ThinLock {
   @Unpreemptible
   @Entrypoint
   public static void inlineLock(Object o, Offset lockOffset) {
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
     Word old = Magic.prepareWord(o, lockOffset); // FIXME: bad for PPC?
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
     Word id = old.and(TL_THREAD_ID_MASK.or(TL_STAT_MASK));
     Word tid = Word.fromIntSignExtend(RVMThread.getCurrentThread().getLockingId());
     if (id.EQ(tid)) {
@@ -67,10 +70,14 @@ public final class ThinLock {
       }
     } else if (id.EQ(TL_STAT_THIN)) {
       // lock is thin and not held by anyone
+
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
       if (Magic.attemptWord(o, lockOffset, old, old.or(tid))) {
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
         if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
         return;
       }
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
     }
     lock(o, lockOffset);
   }
@@ -80,7 +87,9 @@ public final class ThinLock {
   @Unpreemptible
   @Entrypoint
   public static void inlineUnlock(Object o, Offset lockOffset) {
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
     Word old = Magic.prepareWord(o, lockOffset); // FIXME: bad for PPC?
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
     Word id = old.and(TL_THREAD_ID_MASK.or(TL_STAT_MASK));
     Word tid = Word.fromIntSignExtend(RVMThread.getCurrentThread().getLockingId());
     if (id.EQ(tid)) {
@@ -91,10 +100,13 @@ public final class ThinLock {
       }
     } else if (old.xor(tid).rshl(TL_LOCK_COUNT_SHIFT).EQ(TL_STAT_THIN.rshl(TL_LOCK_COUNT_SHIFT))) {
       Magic.combinedLoadBarrier();
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
       if (Magic.attemptWord(o, lockOffset, old, old.and(TL_UNLOCK_MASK).or(TL_STAT_THIN))) {
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
         if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
         return;
       }
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
     }
     unlock(o, lockOffset);
   }
@@ -108,7 +120,9 @@ public final class ThinLock {
     Word threadId = Word.fromIntZeroExtend(RVMThread.getCurrentThread().getLockingId());
 
     for (int cnt = 0;;cnt++) {
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
       Word old = Magic.getWordAtOffset(o, lockOffset);
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
       Word stat = old.and(TL_STAT_MASK);
       boolean tryToInflate = false;
       if (stat.EQ(TL_STAT_BIASABLE)) {
@@ -116,23 +130,29 @@ public final class ThinLock {
         if (id.isZero()) {
           if (ENABLE_BIASED_LOCKING) {
             // lock is unbiased, bias it in our favor and grab it
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
             if (Synchronization.tryCompareAndSwap(
                   o, lockOffset,
                   old,
                   old.or(threadId).plus(TL_LOCK_COUNT_UNIT))) {
               if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
+              Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
               return;
             }
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
           } else {
             // lock is unbiased but biasing is NOT allowed, so turn it into
             // a thin lock
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
             if (Synchronization.tryCompareAndSwap(
                   o, lockOffset,
                   old,
                   old.or(threadId).or(TL_STAT_THIN))) {
               if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
+              Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
               return;
             }
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
           }
         } else if (id.EQ(threadId)) {
           // lock is biased in our favor
@@ -152,18 +172,23 @@ public final class ThinLock {
       } else if (stat.EQ(TL_STAT_THIN)) {
         Word id = old.and(TL_THREAD_ID_MASK);
         if (id.isZero()) {
+          Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
           if (Synchronization.tryCompareAndSwap(
                 o, lockOffset, old, old.or(threadId))) {
             if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
             return;
           }
+          Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
         } else if (id.EQ(threadId)) {
           Word changed = old.plus(TL_LOCK_COUNT_UNIT);
+          Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
           if (changed.and(TL_LOCK_COUNT_MASK).isZero()) {
             tryToInflate = true;
           } else if (Synchronization.tryCompareAndSwap(
                        o, lockOffset, old, changed)) {
             if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
             return;
           }
         } else if (cnt > retryLimit) {
@@ -201,7 +226,9 @@ public final class ThinLock {
   public static void unlock(Object o, Offset lockOffset) {
     Word threadId = Word.fromIntZeroExtend(RVMThread.getCurrentThread().getLockingId());
     for (int cnt = 0;;cnt++) {
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
       Word old = Magic.getWordAtOffset(o, lockOffset);
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
       Word stat = old.and(TL_STAT_MASK);
       if (stat.EQ(TL_STAT_BIASABLE)) {
         Word id = old.and(TL_THREAD_ID_MASK);
@@ -225,11 +252,14 @@ public final class ThinLock {
             changed = old.minus(TL_LOCK_COUNT_UNIT);
           }
           Magic.combinedLoadBarrier();
+          Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
           if (Synchronization.tryCompareAndSwap(
                 o, lockOffset, old, changed)) {
+            Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
             if (!VM.MagicAttemptImpliesStoreLoadBarrier) Magic.fence();
             return;
           }
+          Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
         } else {
           if (false) {
             VM.sysWriteln("threadId = ",threadId);
@@ -251,7 +281,9 @@ public final class ThinLock {
   public static boolean holdsLock(Object o, Offset lockOffset, RVMThread thread) {
     for (int cnt = 0;;++cnt) {
       int tid = thread.getLockingId();
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
       Word bits = Magic.getWordAtOffset(o, lockOffset);
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
       if (bits.and(TL_STAT_MASK).EQ(TL_STAT_BIASABLE)) {
         // if locked, then it is locked with a thin lock
         return
@@ -343,7 +375,9 @@ public final class ThinLock {
   @Inline
   @Unpreemptible
   private static void setDedicatedU16(Object o, Offset lockOffset, Word value) {
+    Permcheck.canWrite(Permcheck.Type.LOCK_WORD, true);
     Magic.setCharAtOffset(o, lockOffset.plus(TL_DEDICATED_U16_OFFSET), (char)(value.toInt() >>> TL_DEDICATED_U16_SHIFT));
+    Permcheck.canWrite(Permcheck.Type.LOCK_WORD, false);
   }
 
   @NoInline
@@ -355,7 +389,10 @@ public final class ThinLock {
     Word id = oldLockWord.and(TL_THREAD_ID_MASK);
     if (id.isZero()) {
       if (false) VM.sysWriteln("id is zero - easy case.");
-      return Synchronization.tryCompareAndSwap(o, lockOffset, oldLockWord, changed);
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
+      boolean ret = Synchronization.tryCompareAndSwap(o, lockOffset, oldLockWord, changed);
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
+      return ret;
     } else {
       if (false) VM.sysWriteln("id = ",id);
       int slot = id.toInt() >> TL_THREAD_ID_SHIFT;
@@ -368,8 +405,11 @@ public final class ThinLock {
         // note that we use a CAS here, but it's only needed in the case
         // that owner==null, since in that case some other thread may also
         // be unbiasing.
-        return Synchronization.tryCompareAndSwap(
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
+        boolean ret = Synchronization.tryCompareAndSwap(
           o, lockOffset, oldLockWord, changed);
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
+        return ret;
       } else {
         boolean result = false;
 
@@ -389,9 +429,11 @@ public final class ThinLock {
         owner.beginPairHandshake();
         if (false) VM.sysWriteln("done with that");
 
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
         Word newLockWord = Magic.getWordAtOffset(o, lockOffset);
         result = Synchronization.tryCompareAndSwap(
           o, lockOffset, oldLockWord, changed);
+        Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
         owner.endPairHandshake();
         if (false) VM.sysWriteln("that worked.");
 
@@ -427,8 +469,11 @@ public final class ThinLock {
     if (false) VM.sysWriteln("changed = ",changed);
     if (oldLockWord.and(TL_STAT_MASK).EQ(TL_STAT_THIN)) {
       if (false) VM.sysWriteln("it's thin, inflating the easy way.");
-      return Synchronization.tryCompareAndSwap(
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
+      boolean ret = Synchronization.tryCompareAndSwap(
         o, lockOffset, oldLockWord, changed);
+      Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
+      return ret;
     } else {
       return casFromBiased(o, lockOffset, oldLockWord, changed, cnt);
     }
@@ -454,7 +499,9 @@ public final class ThinLock {
     if (false) VM.sysWriteln("l = ",Magic.objectAsAddress(l));
     l.mutex.lock();
     for (int cnt = 0;;++cnt) {
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
       Word bits = Magic.getWordAtOffset(o, lockOffset);
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
       // check to see if another thread has already created a fat lock
       if (isFat(bits)) {
         if (trace) {
@@ -512,14 +559,19 @@ public final class ThinLock {
     // we allow concurrent modification of the lock word when it's thin or fat.
     Word changed = oldLockWord.and(TL_UNLOCK_MASK).or(TL_STAT_THIN);
     if (VM.VerifyAssertions) VM._assert(getLockOwner(changed) == 0);
-    return Synchronization.tryCompareAndSwap(
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, true);
+    boolean ret = Synchronization.tryCompareAndSwap(
       o, lockOffset, oldLockWord, changed);
+    Permcheck.canReadWrite(Permcheck.Type.LOCK_WORD, false);
+    return ret;
   }
 
   @Uninterruptible
   public static void markDeflated(Object o, Offset lockOffset, int id) {
     for (;;) {
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
       Word bits = Magic.getWordAtOffset(o, lockOffset);
+      Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
       if (VM.VerifyAssertions) VM._assert(isFat(bits));
       if (VM.VerifyAssertions) VM._assert(getLockIndex(bits) == id);
       if (attemptToMarkDeflated(o, lockOffset, bits)) {
@@ -592,7 +644,9 @@ public final class ThinLock {
    */
   @Unpreemptible
   public static Lock getHeavyLock(Object o, Offset lockOffset, boolean create) {
+    Permcheck.canRead(Permcheck.Type.LOCK_WORD, true);
     Word old = Magic.getWordAtOffset(o, lockOffset);
+    Permcheck.canRead(Permcheck.Type.LOCK_WORD, false);
     if (isFat(old)) { // already a fat lock in place
       return Lock.getLock(getLockIndex(old));
     } else if (create) {

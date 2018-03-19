@@ -697,9 +697,9 @@ public class JavaHeader {
 
   @Unpreemptible("Become another thread when lock is contended, don't preempt in other cases")
   public static void genericLock(Object o) {
-    Permcheck.canWrite(Permcheck.Type.STATUS_WORD, true);
+    Permcheck.canReadWrite(Permcheck.Type.STATUS_WORD, true);
     ThinLock.lock(o, STATUS_OFFSET);
-    Permcheck.canWrite(Permcheck.Type.STATUS_WORD, false);
+    Permcheck.canReadWrite(Permcheck.Type.STATUS_WORD, false);
   }
 
   @Unpreemptible("No interruption unless of exceptions")
