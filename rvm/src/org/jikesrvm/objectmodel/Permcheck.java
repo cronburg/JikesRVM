@@ -177,39 +177,40 @@ public class Permcheck {
   
   @SuppressWarnings({ "static-access" })
   private static void many2bCheck(Address addr, int extent, byte[] expectedCurrTypes, byte expectedCurrType, byte newType, boolean check) {
-    acquireLock();
-    if (!VM.fullyBooted)
-     return;
-    
-    //Log.write("Mark("); Log.write(addr);
-    //Log.write(", "); Log.write(extent);
-    //Log.write(", "); Log.write(expectedCurrType);
-    //Log.write(", "); Log.write(increment); Log.writeln(")");
-    
-    
-    
-    for (int i = 0; i < extent; i++) {
-      if (!error && check) {
-        byte currType = getBits(0, addr.plus(i));
-        
-        if (expectedCurrTypes == null) {
-          if (currType != expectedCurrType) {
-            writeBad(addr, expectedCurrType, newType, currType, i, extent);
-          }
-        } else {
-          for (int j = 0; j < expectedCurrTypes.length; j++) {
-            if (currType == expectedCurrTypes[j]) break;
-            if (j == expectedCurrTypes.length - 1) {
-              Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
-              writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+    // Can't do any allocations in here because we're running in the VM but not necessarily VM.fullyBooted
+    if (VM.runningVM) {
+      acquireLock();
+      
+      //Log.write("Mark("); Log.write(addr);
+      //Log.write(", "); Log.write(extent);
+      //Log.write(", "); Log.write(expectedCurrType);
+      //Log.write(", "); Log.write(increment); Log.writeln(")");
+      
+      
+      
+      for (int i = 0; i < extent; i++) {
+        if (!error && check) {
+          byte currType = getBits(0, addr.plus(i));
+          
+          if (expectedCurrTypes == null) {
+            if (currType != expectedCurrType) {
+              writeBad(addr, expectedCurrType, newType, currType, i, extent);
+            }
+          } else {
+            for (int j = 0; j < expectedCurrTypes.length; j++) {
+              if (currType == expectedCurrTypes[j]) break;
+              if (j == expectedCurrTypes.length - 1) {
+                Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
+                writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+              }
             }
           }
         }
+        // TODO: Set all bits at the same time.
+        setBits(0, addr.plus(i), newType);
       }
-      // TODO: Set all bits at the same time.
-      setBits(0, addr.plus(i), newType);
+      releaseLock();
     }
-    releaseLock();
   }
   
   @Inline
