@@ -2,22 +2,18 @@ package org.jikesrvm.objectmodel;
 
 
 import org.jikesrvm.VM;
-import org.jikesrvm.mm.mminterface.Selected;
-import org.jikesrvm.mm.mmtk.ActivePlan;
 import org.jikesrvm.runtime.BootRecord;
 import org.jikesrvm.runtime.Entrypoints;
 import org.jikesrvm.runtime.Magic;
 import org.jikesrvm.runtime.SysCall;
 import org.jikesrvm.scheduler.RVMThread;
 import org.jikesrvm.scheduler.Synchronization;
-import org.mmtk.plan.MutatorContext;
 import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
-import org.mmtk.policy.Space.SpaceVisitor;
 import org.mmtk.utility.Constants;
 import org.mmtk.utility.Log;
-import org.mmtk.vm.Lock;
 import org.vmmagic.pragma.Entrypoint;
+import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Uninterruptible;
 import org.vmmagic.unboxed.Address;
 import org.vmmagic.unboxed.Extent;
@@ -61,6 +57,7 @@ public class Permcheck {
   
   private static Offset lockOffset = Offset.max();
   
+  @Inline
   private static void acquireLock() {
     if (!lockOffset.isMax()) {
       while(!Synchronization.testAndSet(Magic.getJTOC(), lockOffset, 1)) {
@@ -69,6 +66,7 @@ public class Permcheck {
     }
   }
   
+  @Inline
   private static void releaseLock() {
     if (!lockOffset.isMax()) {
       Synchronization.fetchAndStore(Magic.getJTOC(), lockOffset, 0);
@@ -85,24 +83,28 @@ public class Permcheck {
     Log.write(")");
   }
   
+  @Inline
   private static void writeTypes(byte type) {
     writeType(type);
   }
   
   private static boolean error = false;
   
+  @Inline
   @SuppressWarnings({ "static-access" })
   public
   static void a2b(Address addr, int extent, byte expectedCurrType, byte newType) {
     a2b(addr, extent, expectedCurrType, newType, true);
   }
   
+  @Inline
   @SuppressWarnings({ "static-access" })
   public
   static void a2b(Address addr, int extent, byte expectedCurrType, byte newType, boolean check) {
     many2bCheck(addr, extent, null, expectedCurrType, newType, check);
   }
   
+  @Inline
   public static void many2b(Address plus, int bytesInWord, byte[] bs, byte newType) {
     many2bCheck(plus, bytesInWord, bs, (byte)0, newType, true);
   }
@@ -175,41 +177,43 @@ public class Permcheck {
   
   @SuppressWarnings({ "static-access" })
   private static void many2bCheck(Address addr, int extent, byte[] expectedCurrTypes, byte expectedCurrType, byte newType, boolean check) {
-    acquireLock();
-    if (!VM.fullyBooted)
-     return;
-    
-    //Log.write("Mark("); Log.write(addr);
-    //Log.write(", "); Log.write(extent);
-    //Log.write(", "); Log.write(expectedCurrType);
-    //Log.write(", "); Log.write(increment); Log.writeln(")");
-    
-    
-    
-    for (int i = 0; i < extent; i++) {
-      if (!error && check) {
-        byte currType = getBits(0, addr.plus(i));
-        
-        if (expectedCurrTypes == null) {
-          if (currType != expectedCurrType) {
-            writeBad(addr, expectedCurrType, newType, currType, i, extent);
-          }
-        } else {
-          for (int j = 0; j < expectedCurrTypes.length; j++) {
-            if (currType == expectedCurrTypes[j]) break;
-            if (j == expectedCurrTypes.length - 1) {
-              Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
-              writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+    // Can't do any allocations in here because we're running in the VM but not necessarily VM.fullyBooted
+    if (VM.runningVM) {
+      acquireLock();
+      
+      //Log.write("Mark("); Log.write(addr);
+      //Log.write(", "); Log.write(extent);
+      //Log.write(", "); Log.write(expectedCurrType);
+      //Log.write(", "); Log.write(increment); Log.writeln(")");
+      
+      
+      
+      for (int i = 0; i < extent; i++) {
+        if (!error && check) {
+          byte currType = getBits(0, addr.plus(i));
+          
+          if (expectedCurrTypes == null) {
+            if (currType != expectedCurrType) {
+              writeBad(addr, expectedCurrType, newType, currType, i, extent);
+            }
+          } else {
+            for (int j = 0; j < expectedCurrTypes.length; j++) {
+              if (currType == expectedCurrTypes[j]) break;
+              if (j == expectedCurrTypes.length - 1) {
+                Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
+                writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+              }
             }
           }
         }
+        // TODO: Set all bits at the same time.
+        setBits(0, addr.plus(i), newType);
       }
-      // TODO: Set all bits at the same time.
-      setBits(0, addr.plus(i), newType);
+      releaseLock();
     }
-    releaseLock();
   }
   
+  @Inline
   public static void freeCell(ObjectReference object) {
   	//Address endAddr = ObjectModel.getObjectEndAddress(object);
     //Address startAddr = ObjectModel.objectStartRef(object);
@@ -217,31 +221,39 @@ public class Permcheck {
     //unmarkData(startAddr, endAddr.minus(startAddr.toInt()).toInt(), Type.CELL);
   }
   
+  @Inline
   public static void freeCell(Address addr) {
     ObjectReference obj = ObjectModel.getObjectFromStartAddress(addr);
     freeCell(obj);
   }
 
+  @Inline
   public static void markData(Address addr, int extent, byte newType) {
     a2b(addr, extent, (byte)(newType - 1), newType);
   }
-    
+   
+  @Inline
   public static void unmarkData(Address addr, int extent, byte oldType) {
     a2b(addr, extent, oldType, (byte)(oldType - 1));
   }
   
+  @Inline
   public static void canRead(byte type, boolean flag) {
     canReadType(0, type, flag);
   }
+  
+  @Inline
   public static void canWrite(byte type, boolean flag) {
     canReadType(0, type, flag);
   }
   
+  @Inline
   public static void canReadWrite(byte type, boolean flag) {
     canRead(type, flag);
     canWrite(type, flag);
   }
 
+  @Inline
   public static void statusWord2Block(Address addr) {
     ObjectReference ref = ObjectModel.getObjectFromStartAddress(addr);
     statusWord2Block(ref);
@@ -249,51 +261,62 @@ public class Permcheck {
   
   protected static final Offset STATUS_OFFSET = org.jikesrvm.objectmodel.JavaHeader.getStatusOffset();
   
+  @Inline
   public static void block2StatusWord(ObjectReference o) {
     Permcheck.a2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.UNMAPPED, Permcheck.Type.STATUS_WORD);
   }
   private static byte[] swORb = {Type.STATUS_WORD, Type.BLOCK, Type.UNMAPPED};
+  
+  @Inline
   public static void statusWord2Block(ObjectReference o) {
     Permcheck.many2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, swORb, Type.BLOCK);
   }
 
+  @Inline
   public static void initializeMap(int shadowMapID) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckInitializeMap(shadowMapID);
   }
 
+  @Inline
   public static void destroyMap(int shadowMapID) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckDestroyMap(shadowMapID);
   }
 
+  @Inline
   public static boolean getBit(int shadowMapID, Address a, int offset) {
     if (VM.runningVM)
       return (1 == SysCall.sysCall.sysPermcheckGetBit(shadowMapID,a,offset));
     return false;
   }
 
+  @Inline
   public static void unmarkBit(int shadowMapID, Address a, int offset) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckUnmarkBit(shadowMapID,a,offset);
   }
 
+  @Inline
   public static void markBit(int shadowMapID, Address a, int offset) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckMarkBit(shadowMapID,a,offset);
   }
 
+  @Inline
   public static void setBits(int shadowMapID, Address a, byte mbits) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckSetBits(shadowMapID,a,mbits);
   }
 
+  @Inline
   public static byte getBits(int shadowMapID, Address a) {
     if (VM.runningVM)
       return SysCall.sysCall.sysPermcheckGetBits(shadowMapID,a);
     return 0;
   }
 
+  @Inline
   public static void setBytes(int shadowMapID, Address start, int size, byte mbits) {
     if (VM.runningVM) {
       for (int i = 0; i < size; i++) {
@@ -302,19 +325,22 @@ public class Permcheck {
     }
   }
 
+  @Inline
   public static void newFunction(Address start, int size, byte[] descriptor, int[] lm, int lm_length) {
     if (VM.runningVM)
       SysCall.sysCall.sysPermcheckNewFunction(start, size, descriptor, descriptor.length, lm, lm_length);
   }
 
   // TODO: [karl] learn types readable and writeable in the boot image with these calls during boot image writer
+  @Inline
   public static void canReadType(int shadowMapID, byte mbits, boolean flag) {
-    if (VM.runningVM)
+    if (VM.runningVM && VM.fullyBooted)
       SysCall.sysCall.sysPermcheckCanReadType(shadowMapID, mbits, flag);
   }
 
+  @Inline
   public static void canWriteType(int shadowMapID, byte mbits, boolean flag) {
-    if (VM.runningVM)
+    if (VM.runningVM && VM.fullyBooted)
       SysCall.sysCall.sysPermcheckCanWriteType(shadowMapID, mbits, flag);
   }
 
@@ -359,18 +385,22 @@ public class Permcheck {
     }
   }
 
+  @Inline
   public static void a2b(Address rtn, Extent bytes, byte from, byte to) {
     a2b(rtn, bytes.toInt(), from, to);
   }
 
+  @Inline
   public static void a2b(Address rtn, Extent bytes, byte[] from, byte to) {
     many2b(rtn, bytes.toInt(), from, to);
   }
 
+  @Inline
   public static void a2b(Address address, int bytes, byte[] from, byte to) {
     many2b(address, bytes, from, to);
   }
 
+  @Inline
   public static void statusWord2Page(Address address) {
     a2b(address.plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Type.STATUS_WORD, Type.PAGE);
   }
