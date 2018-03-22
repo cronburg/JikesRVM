@@ -14,11 +14,11 @@
 #include "sys.h"
 #include <sys/mman.h> // mmap
 
-typedef int Int;
-typedef size_t SizeT;
-typedef unsigned long int Addr;
-typedef unsigned char U8; //UChar;
-
+#ifdef PERMCHECK_ON_PIN
+//#define runMe(FNCN) shadowMapID; return (volatile int) shadowMapID;
+char *maps = NULL;
+#include "intercept.h"
+#else // PERMCHECK_ON_PIN
 #ifdef PERMCHECK_ON_LIGHTWEIGHT
 
 // TODO:
@@ -59,15 +59,12 @@ void  shadow_out_of_memory() {
   printf("ERROR: Ran out of memory while allocating shadow memory.\n");
   sysExit(EXIT_STATUS_SYSCALL_TROUBLE);
 }
+
 #include "shadow-32.c"
 #include "permcheck-lightweight.c"
 ShadowMap *maps = NULL;
 
 #define runMe(FNCN) (FNCN); return (volatile int) shadowMapID;
-#else
-#define runMe(FNCN) shadowMapID; return (volatile int) shadowMapID;
-
-#endif // PERMCHECK_ON_LIGHTWEIGHT
 
 EXTERNAL int sysPermcheckInitializeMap(int shadowMapID) {
   runMe(init_map(shadowMapID));
@@ -94,32 +91,29 @@ EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a) {
   shadowMapID = runMe(get_bits(shadowMapID, a));
 }
 EXTERNAL int sysPermcheckCanReadType(int shadowMapID, char mbits, int flag) {
-  /* Intercepted by PIN tool */
 }
 EXTERNAL int sysPermcheckCanWriteType(int shadowMapID, char mbits, int flag) {
-  /* Intercepted by PIN tool */
 }
 
 // Register a new function - all subsequent RegisterLineNumber calls correspond to the function
 // given to the most recent call to this function. See 'sysPermcheckNewFunction' for usage pattern
 EXTERNAL void sysPermcheckRegisterFunction(Address start, int size, char* descriptor, int descr_length) {
-  /* Intercepted by PIN tool */
 }
 
 // Addresses [a, a + sz) contain machine code corresponding to the given line_number.
 EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz) {
-  /* Intercepted by PIN tool */
 }
 
 EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor, int descr_length, int* line_numbers, int line_numbers_length) {
   int i;
-  /* Intercepted by PIN tool */
   sysPermcheckRegisterFunction(start, size, descriptor, descr_length);
   for (i = 0; i < line_numbers_length; i++) {
     sysPermcheckRegisterLineNumber((Address)(start + i), line_numbers[2 * i], line_numbers[2 * i + 1]);
   }
 }
 
+#endif // PERMCHECK_ON_LIGHTWEIGHT
+#endif // !PERMCHECK_ON_PIN
 
 void init_chisel(void* mem) {
 #ifdef PERMCHECK_ON_LIGHTWEIGHT
