@@ -53,8 +53,9 @@
   <!-- Bootloader directory -->
   <property name="bl.dir" location="${basedir}/tools/bootloader"/>
 
-  <property name="permcheck.dir" location="${components.dir}/permcheck"/>
-  <property name="shadow.memory.dir" location="${components.dir}/permcheck/shadow-memory"/>
+  <!-- <property name="permcheck.dir" location="${components.dir}/permcheck"/>
+       -->
+  <property name="shadow.memory.dir" location="${permcheck.dir}/shadow-memory"/>
 
   <!-- Directories for IR and BURS (used in gen-opt-ir and gen-opt-ir-uptodate-check targets) -->	
   <property name="build.ir.dir" location="${basedir}/rvm/src-generated/opt-ir"/>
