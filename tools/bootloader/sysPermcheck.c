@@ -15,7 +15,6 @@
 #include <sys/mman.h> // mmap
 
 #ifdef PERMCHECK_ON_PIN
-//#define runMe(FNCN) shadowMapID; return (volatile int) shadowMapID;
 char *maps = NULL;
 #include "intercept.h"
 #else // PERMCHECK_ON_PIN
@@ -63,8 +62,12 @@ void  shadow_out_of_memory() {
 #include "shadow-32.c"
 #include "permcheck-lightweight.c"
 ShadowMap *maps = NULL;
-
 #define runMe(FNCN) (FNCN); return (volatile int) shadowMapID;
+
+#else // No pin, no lightweight:
+#define runMe(FNCN) shadowMapID; return (volatile int) shadowMapID;
+
+#endif // PERMCHECK_ON_LIGHTWEIGHT
 
 EXTERNAL int sysPermcheckInitializeMap(volatile int shadowMapID) {
   runMe(init_map(shadowMapID));
@@ -112,7 +115,6 @@ EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
   }
 }
 
-#endif // PERMCHECK_ON_LIGHTWEIGHT
 #endif // !PERMCHECK_ON_PIN
 
 void init_chisel(void* mem) {

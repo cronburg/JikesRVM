@@ -192,16 +192,22 @@ public class Permcheck {
         if (!error && check) {
           byte currType = getBits(0, addr.plus(i));
           
-          if (expectedCurrTypes == null) {
-            if (currType != expectedCurrType) {
-              writeBad(addr, expectedCurrType, newType, currType, i, extent);
-            }
-          } else {
-            for (int j = 0; j < expectedCurrTypes.length; j++) {
-              if (currType == expectedCurrTypes[j]) break;
-              if (j == expectedCurrTypes.length - 1) {
-                Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
-                writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+          // TODO: figure out how to get permcheck calls compiled away when not
+          // compiling with permcheck enabled (probably with the annotations
+          // and a bootimage compiler argument). For now though we ignore all
+          // unmapped transitions (slowing down the runtime)
+          if (currType != Type.UNMAPPED) {
+            if (expectedCurrTypes == null) {
+              if (currType != expectedCurrType) {
+                writeBad(addr, expectedCurrType, newType, currType, i, extent);
+              }
+            } else {
+              for (int j = 0; j < expectedCurrTypes.length; j++) {
+                if (currType == expectedCurrTypes[j]) break;
+                if (j == expectedCurrTypes.length - 1) {
+                  //Log.write("UhOh]"); writeType(currType); Log.writeln("=", currType);
+                  writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+                }
               }
             }
           }
