@@ -22,6 +22,11 @@
   <property name="host.file" location="${jikesrvm.dir}/build/hosts/${host.name}.properties"/>
   <property file="${host.file}"/>
 
+  <!-- Load profiler-specific properties (e.g. permcheck, valgrind, ...) -->
+  <property name="profiler.file" location="${jikesrvm.dir}/build/profilers/${profiler.name}.properties"/>
+  <property file="${profiler.file}"/>
+  <!-- <echoproperties prefix="profiler."/> -->
+
   <!-- location of components -->
   <property name="components.dir" location="${jikesrvm.dir}/components"/>
   <property name="components.file" location="${components.dir}/components.properties"/>
@@ -55,9 +60,15 @@
       <condition property="config.full-variant" value="${config.variant}profile" else="${config.variant}">
         <isset property="config.with-profile"/>
       </condition>
+      <condition property="profiler.dir.extension"
+                 value="-${profiler.name}"
+                 else="">
+        <isset property="profiler.name"/>
+      </condition>
+      <!-- <echoproperties prefix="profiler."/> -->
       <condition property="@{property}"
-                 value="@{config}_${target.name}"
-                 else="@{config}_${config.full-variant}_${target.name}">
+                 value="@{config}${profiler.dir.extension}_${target.name}"
+                 else="@{config}${profiler.dir.extension}_${config.full-variant}_${target.name}">
         <equals arg1="${config.full-variant}" arg2=""/>
       </condition>
     </sequential>

@@ -80,6 +80,7 @@ Building Options:
      --with-perfevent Build with perf event support
  -a, --with-acheck    Build with align checks, implies --x87 --processors 1
  -g, --gdb-symbols    Build with gdb symbols
+     --profiler       Specify the type of profiler to use (e.g. permcheck-pin or permcheck-lightweight)
  -q, --quick          Quick build (not 100% safe - doesn't regenerate source)
      --classpath-git  Build from classpath git HEAD
  -r, --root           Specify rvm root on the commandline, chosen by:
@@ -173,6 +174,7 @@ my $mmtk_eclipse;
 my $cmd_targetUser;
 my $git_head;
 my $gdb_symbols;
+my $profiler_name;
 my @test_arg_array;
 my $test_set;
 my @test_array;
@@ -218,6 +220,7 @@ GetOptions(
   "target-user=s" => \$cmd_targetUser,
   "classpath-git" => \$git_head,
   "g|gdb-symbols" => \$gdb_symbols,
+  "profiler=s" => \$profiler_name,
   "test-arg=s" => \@test_arg_array,
   "test-run=s" => \$test_set,
   "t|test=s" => \@test_array,
@@ -804,6 +807,9 @@ if ($ok) {
     }
     if (defined $gdb_symbols) {
       $defs .= "-Drvm.debug-symbols=true ";
+    }
+    if (defined $profiler_name) {
+      $defs .= "-Dprofiler.name=".$profiler_name." ";
     }
     if (defined $build_args && $build_args ne "") {
       $defs       = $defs." ".$build_args." ";

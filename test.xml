@@ -65,6 +65,9 @@
   <macrodef name="testRunPropertyInit">
     <attribute name="tag"/>
     <sequential>
+      <condition property="test.config.@{tag}.profiler.name" value="${test.config.@{tag}.profiler.name}">
+        <isset property="test.config.@{tag}.profiler.name"/>
+      </condition>
       <property name="test.config.@{tag}.configuration" value="@{tag}"/>
       <setBuildName property="test.config.@{tag}.build.name" config="${test.config.@{tag}.configuration}"/>
       <property name="test.config.@{tag}.target" value="main"/>

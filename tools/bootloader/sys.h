@@ -330,19 +330,19 @@ EXTERNAL jfloat sysVaArgJfloat(va_list *ap);
 EXTERNAL jdouble sysVaArgJdouble(va_list *ap);
 EXTERNAL jobject sysVaArgJobject(va_list *ap);
 // sysPermcheck
-EXTERNAL int sysPermcheckInitializeMap(int shadowMapID);
-EXTERNAL int sysPermcheckDestroyMap(int shadowMapID);
-EXTERNAL int sysPermcheckGetBit(int shadowMapID, Address a, int offset);
-EXTERNAL int sysPermcheckUnmarkBit(int shadowMapID, Address a, int offset);
-EXTERNAL int sysPermcheckMarkBit(int shadowMapID, Address a, int offset);
-EXTERNAL int sysPermcheckSetBits(int shadowMapID, Address a, char mbits);
-EXTERNAL char sysPermcheckGetBits(int shadowMapID, Address a);
+EXTERNAL int sysPermcheckInitializeMap(volatile int shadowMapID);
+EXTERNAL int sysPermcheckDestroyMap(volatile int shadowMapID);
+EXTERNAL int sysPermcheckGetBit(volatile int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckUnmarkBit(volatile int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckMarkBit(volatile int shadowMapID, Address a, int offset);
+EXTERNAL int sysPermcheckSetBits(volatile int shadowMapID, Address a, char mbits);
+EXTERNAL char sysPermcheckGetBits(volatile int shadowMapID, Address a);
 EXTERNAL void sysPermcheckRegisterFunction(Address start, int size, char* descriptor, int descr_length);
 EXTERNAL void sysPermcheckRegisterLineNumber(Address a, int line_number, int sz);
 EXTERNAL void sysPermcheckNewFunction(Address start, int size, char* descriptor,
                                       int descr_length, int* line_numbers, int line_numbers_length);
-EXTERNAL int sysPermcheckCanReadType(int shadowMapID, char mbits, int flag);
-EXTERNAL int sysPermcheckCanWriteType(int shadowMapID, char mbits, int flag);
+EXTERNAL int sysPermcheckCanReadType(volatile int shadowMapID, char mbits, unsigned int flag);
+EXTERNAL int sysPermcheckCanWriteType(volatile int shadowMapID, char mbits, unsigned int flag);
 
 /** Only called externally from Java programs. */
 EXTERNAL void sysExit(int) NORETURN;
