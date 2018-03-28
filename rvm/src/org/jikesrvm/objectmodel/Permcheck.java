@@ -38,6 +38,17 @@ public class Permcheck {
     public static final byte FREE_PAGE = 0x07;
   }
   
+  public class JavaType {
+    public static final byte BOOLEAN = 0x08;
+    public static final byte BYTE    = 0x09;
+    public static final byte CHAR    = 0x0a;
+    public static final byte SHORT   = 0x0b;
+    public static final byte INT     = 0x0c;
+    public static final byte LONG    = 0x0d;
+    public static final byte FLOAT   = 0x0e;
+    public static final byte DOUBLE  = 0x0f;
+  }
+  
   private static void writeType(byte type) {
   	switch (type) {
   	  case Type.UNMAPPED: Log.write("UNMAPPED"); break;
