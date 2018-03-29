@@ -282,20 +282,18 @@ public final class Map32 extends Map {
     /* establish bounds of discontiguous space */
     Address startAddress = Space.getDiscontigStart();
     int firstChunk = getChunkIndex(startAddress);
-    int lastChunk = getChunkIndex(Space.getDiscontigEnd());
-    int unavailStartChunk = lastChunk + 1;
-    int trailingChunks = VMLayoutConstants.MAX_CHUNKS - unavailStartChunk;
-    int pages = (1 + lastChunk - firstChunk) * VMLayoutConstants.PAGES_IN_CHUNK;
+    int lastChunk = getChunkIndex(Space.getDiscontigEnd().minus(1));
+    int pages = (1 + lastChunk - firstChunk) * VMLayoutConstants.PAGES_IN_CHUNK + 1;
     globalPageMap.resizeFreeList(pages, pages);
     for (int pr = 0; pr < sharedDiscontigFLCount; pr++)
       sharedFLMap[pr].resizeFreeList(startAddress);
 
     /* set up the region map free list */
-    int allocedChunk = regionMap.alloc(firstChunk);       // block out entire bottom of address range
+    regionMap.alloc(firstChunk);       // block out entire bottom of address range
     for (int chunkIndex = firstChunk; chunkIndex <= lastChunk; chunkIndex++)
-      allocedChunk = regionMap.alloc(1);             // Tentatively allocate all usable chunks
-    allocedChunk = regionMap.alloc(trailingChunks);  // block out entire top of address range
-    if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(allocedChunk == unavailStartChunk);
+      regionMap.alloc(1);             // Tentatively allocate all usable chunks
+    regionMap.alloc(VMLayoutConstants.MAX_CHUNKS - lastChunk);  // block out entire top of address range
+    Log.write("RVM-662 Hit\n");
 
     /* set up the global page map and place chunks on free list */
     int firstPage = 0;
