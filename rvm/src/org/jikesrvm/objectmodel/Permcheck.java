@@ -38,6 +38,17 @@ public class Permcheck {
     public static final byte FREE_PAGE = 0x07;
   }
   
+  public class JavaType {
+    public static final byte BOOLEAN = 0x08;
+    public static final byte BYTE    = 0x09;
+    public static final byte CHAR    = 0x0a;
+    public static final byte SHORT   = 0x0b;
+    public static final byte INT     = 0x0c;
+    public static final byte LONG    = 0x0d;
+    public static final byte FLOAT   = 0x0e;
+    public static final byte DOUBLE  = 0x0f;
+  }
+  
   private static void writeType(byte type) {
   	switch (type) {
   	  case Type.UNMAPPED: Log.write("UNMAPPED"); break;
@@ -177,39 +188,46 @@ public class Permcheck {
   
   @SuppressWarnings({ "static-access" })
   private static void many2bCheck(Address addr, int extent, byte[] expectedCurrTypes, byte expectedCurrType, byte newType, boolean check) {
-    acquireLock();
-    if (!VM.fullyBooted)
-     return;
-    
-    //Log.write("Mark("); Log.write(addr);
-    //Log.write(", "); Log.write(extent);
-    //Log.write(", "); Log.write(expectedCurrType);
-    //Log.write(", "); Log.write(increment); Log.writeln(")");
-    
-    
-    
-    for (int i = 0; i < extent; i++) {
-      if (!error && check) {
-        byte currType = getBits(0, addr.plus(i));
-        
-        if (expectedCurrTypes == null) {
-          if (currType != expectedCurrType) {
-            writeBad(addr, expectedCurrType, newType, currType, i, extent);
-          }
-        } else {
-          for (int j = 0; j < expectedCurrTypes.length; j++) {
-            if (currType == expectedCurrTypes[j]) break;
-            if (j == expectedCurrTypes.length - 1) {
-              Log.write("Crap]"); writeType(currType); Log.writeln("=", currType);
-              writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+    // Can't do any allocations in here because we're running in the VM but not necessarily VM.fullyBooted
+    if (VM.runningVM) {
+      acquireLock();
+      
+      //Log.write("Mark("); Log.write(addr);
+      //Log.write(", "); Log.write(extent);
+      //Log.write(", "); Log.write(expectedCurrType);
+      //Log.write(", "); Log.write(increment); Log.writeln(")");
+      
+      
+      
+      for (int i = 0; i < extent; i++) {
+        if (!error && check) {
+          byte currType = getBits(0, addr.plus(i));
+          
+          // TODO: figure out how to get permcheck calls compiled away when not
+          // compiling with permcheck enabled (probably with the annotations
+          // and a bootimage compiler argument). For now though we ignore all
+          // unmapped transitions (slowing down the runtime)
+          if (currType != Type.UNMAPPED) {
+            if (expectedCurrTypes == null) {
+              if (currType != expectedCurrType) {
+                writeBad(addr, expectedCurrType, newType, currType, i, extent);
+              }
+            } else {
+              for (int j = 0; j < expectedCurrTypes.length; j++) {
+                if (currType == expectedCurrTypes[j]) break;
+                if (j == expectedCurrTypes.length - 1) {
+                  //Log.write("UhOh]"); writeType(currType); Log.writeln("=", currType);
+                  writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+                }
+              }
             }
           }
         }
+        // TODO: Set all bits at the same time.
+        setBits(0, addr.plus(i), newType);
       }
-      // TODO: Set all bits at the same time.
-      setBits(0, addr.plus(i), newType);
+      releaseLock();
     }
-    releaseLock();
   }
   
   @Inline

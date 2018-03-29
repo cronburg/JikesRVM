@@ -18,6 +18,7 @@ import static org.mmtk.utility.Constants.INSTANCE_FIELD;
 
 import org.jikesrvm.classloader.RVMType;
 import org.jikesrvm.objectmodel.ObjectModel;
+import org.jikesrvm.objectmodel.Permcheck;
 import org.jikesrvm.objectmodel.TIB;
 import org.jikesrvm.runtime.Magic;
 import org.mmtk.vm.VM;
@@ -39,7 +40,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void booleanWrite(ObjectReference objref, boolean value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.BOOLEAN, true);
     Magic.setBooleanAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.BOOLEAN, false);
   }
 
   /**
@@ -54,7 +57,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final boolean booleanRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getByteAtOffset(objref.toObject(), offset.toOffset()) == 0;
+    Permcheck.canRead(Permcheck.JavaType.BOOLEAN, true);
+    boolean ret = Magic.getByteAtOffset(objref.toObject(), offset.toOffset()) == 0;
+    Permcheck.canRead(Permcheck.JavaType.BOOLEAN, false);
+    return ret;
   }
 
   /**
@@ -69,7 +75,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void byteWrite(ObjectReference objref, byte value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.BYTE, true);
     Magic.setByteAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.BYTE, false);
   }
 
   /**
@@ -84,7 +92,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final byte byteRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getByteAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.BYTE, true);
+    byte ret = Magic.getByteAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.BYTE, false);
+    return ret;
   }
 
   /**
@@ -99,7 +110,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void charWrite(ObjectReference objref, char value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.CHAR, true);
     Magic.setCharAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.CHAR, false);
   }
 
   /**
@@ -114,7 +127,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final char charRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getCharAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.CHAR, true);
+    char ret = Magic.getCharAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.CHAR, false);
+    return ret;
   }
 
   /**
@@ -129,7 +145,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void shortWrite(ObjectReference objref, short value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.SHORT, true);
     Magic.setShortAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.SHORT, false);
   }
 
   /**
@@ -144,7 +162,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final short shortRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getShortAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.SHORT, true);
+    short ret = Magic.getShortAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.SHORT, false);
+    return ret;
   }
 
   /**
@@ -159,7 +180,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void intWrite(ObjectReference objref, int value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.INT, true);
     Magic.setIntAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.INT, false);
   }
 
   /**
@@ -174,7 +197,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final int intRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getIntAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.INT, true);
+    int ret = Magic.getIntAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.INT, false);
+    return ret;
   }
 
   /**
@@ -190,14 +216,23 @@ public class Barriers extends org.mmtk.vm.Barriers {
    */
   @Override
   public boolean intTryCompareAndSwap(ObjectReference objref, int expected, int newValue, Word offset, Word unused, int mode) {
+    boolean ret;
     if (org.jikesrvm.VM.BuildForIA32) {
-      return Magic.attemptInt(objref.toObject(), offset.toOffset(), expected, newValue);
+      Permcheck.canReadWrite(Permcheck.JavaType.INT, true);
+      ret = Magic.attemptInt(objref.toObject(), offset.toOffset(), expected, newValue);
+      Permcheck.canReadWrite(Permcheck.JavaType.INT, false);
+      return ret;
     } else {
       int oldValue;
+      Permcheck.canReadWrite(Permcheck.JavaType.INT, true);
       do {
         oldValue = Magic.prepareInt(objref, offset.toOffset());
-        if (oldValue != expected) return false;
+        if (oldValue != expected) {
+          Permcheck.canReadWrite(Permcheck.JavaType.INT, false);
+          return false;
+        }
       } while (!Magic.attemptInt(objref, offset.toOffset(), oldValue, newValue));
+      Permcheck.canReadWrite(Permcheck.JavaType.INT, false);
       return true;
     }
   }
@@ -214,7 +249,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void longWrite(ObjectReference objref, long value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.LONG, true);
     Magic.setLongAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.LONG, false);
   }
 
   /**
@@ -229,7 +266,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final long longRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getLongAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.LONG, true);
+    long ret = Magic.getLongAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.LONG, false);
+    return ret;
   }
 
   /**
@@ -245,14 +285,22 @@ public class Barriers extends org.mmtk.vm.Barriers {
    */
   @Override
   public boolean longTryCompareAndSwap(ObjectReference objref, long expected, long newValue, Word offset, Word unused, int mode) {
+    boolean ret;
+    Permcheck.canReadWrite(Permcheck.JavaType.LONG, true);
     if (org.jikesrvm.VM.BuildForIA32) {
-      return Magic.attemptLong(objref.toObject(), offset.toOffset(), expected, newValue);
+      ret = Magic.attemptLong(objref.toObject(), offset.toOffset(), expected, newValue);
+      Permcheck.canReadWrite(Permcheck.JavaType.LONG, false);
+      return ret;
     } else {
       long oldValue;
       do {
         oldValue = Magic.prepareLong(objref, offset.toOffset());
-        if (oldValue != expected) return false;
+        if (oldValue != expected) {
+          Permcheck.canReadWrite(Permcheck.JavaType.LONG, false);
+          return false;
+        }
       } while (!Magic.attemptLong(objref, offset.toOffset(), oldValue, newValue));
+      Permcheck.canReadWrite(Permcheck.JavaType.LONG, false);
       return true;
     }
   }
@@ -269,7 +317,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void floatWrite(ObjectReference objref, float value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.FLOAT, true);
     Magic.setFloatAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.FLOAT, false);
   }
 
   /**
@@ -284,7 +334,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final float floatRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getFloatAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.FLOAT, true);
+    float ret = Magic.getFloatAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.FLOAT, false);
+    return ret;
   }
 
   /**
@@ -299,7 +352,9 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final void doubleWrite(ObjectReference objref, double value, Word offset, Word location, int mode) {
+    Permcheck.canWrite(Permcheck.JavaType.DOUBLE, true);
     Magic.setDoubleAtOffset(objref.toObject(), offset.toOffset(), value, location.toInt());
+    Permcheck.canWrite(Permcheck.JavaType.DOUBLE, false);
   }
 
   /**
@@ -314,7 +369,10 @@ public class Barriers extends org.mmtk.vm.Barriers {
   @Inline
   @Override
   public final double doubleRead(ObjectReference objref, Word offset, Word location, int mode) {
-    return Magic.getDoubleAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.DOUBLE, true);
+    double ret = Magic.getDoubleAtOffset(objref.toObject(), offset.toOffset());
+    Permcheck.canRead(Permcheck.JavaType.DOUBLE, false);
+    return ret;
   }
 
   /**
