@@ -294,6 +294,12 @@ public final class Map32 extends Map {
       regionMap.alloc(1);             // Tentatively allocate all usable chunks
     regionMap.alloc(VMLayoutConstants.MAX_CHUNKS - lastChunk);  // block out entire top of address range
     Log.write("RVM-662 Hit\n");
+    Log.writeln("firstChunk: ", firstChunk);
+    Log.writeln("lastChunk: ", lastChunk);
+    Log.writeln("pages: ", pages);
+    Log.writeln("startAddress: ", startAddress);
+    Log.writeln("getDiscontigEnd: ", Space.getDiscontigEnd());
+    Log.writeln("trailingChunks=", VMLayoutConstants.MAX_CHUNKS - (lastChunk + 1));
 
     /* set up the global page map and place chunks on free list */
     int firstPage = 0;
