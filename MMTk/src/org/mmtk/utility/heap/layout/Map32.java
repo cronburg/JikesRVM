@@ -111,6 +111,7 @@ public final class Map32 extends Map {
         Log.write("\" at ");
         Log.writeln(start.plus(e));
         Space.printVMMap();
+        globalPageMap.dbgPrintDetail();
         VM.assertions.fail("exiting");
       }
       descriptorMap[index] = descriptor;
@@ -300,6 +301,7 @@ public final class Map32 extends Map {
     Log.writeln("startAddress: ", startAddress);
     Log.writeln("getDiscontigEnd: ", Space.getDiscontigEnd());
     Log.writeln("trailingChunks=", VMLayoutConstants.MAX_CHUNKS - (lastChunk + 1));
+    
 
     /* set up the global page map and place chunks on free list */
     int firstPage = 0;
@@ -312,6 +314,8 @@ public final class Map32 extends Map {
       if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(allocedPages == firstPage);
       firstPage += VMLayoutConstants.PAGES_IN_CHUNK;
     }
+    
+    globalPageMap.dbgPrintDetail();
 
     finalized  = true;
   }
