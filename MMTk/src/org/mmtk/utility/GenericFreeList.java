@@ -635,4 +635,8 @@ public abstract class GenericFreeList {
 
   protected int heads = 1;
   protected int head = -1;
+  
+  public int getHead() {
+    return head;
+  }
 }

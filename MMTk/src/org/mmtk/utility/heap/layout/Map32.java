@@ -111,13 +111,35 @@ public final class Map32 extends Map {
         Log.write("\" at ");
         Log.writeln(start.plus(e));
         Space.printVMMap();
+        regionMap.dbgPrintDetail();
         globalPageMap.dbgPrintDetail();
+        dbgPrintSpaceMap();
         VM.assertions.fail("exiting");
       }
       descriptorMap[index] = descriptor;
       VM.barriers.objectArrayStoreNoGCBarrier(spaceMap, index, space);
       e = e.plus(VMLayoutConstants.BYTES_IN_CHUNK);
     }
+  }
+
+  private void dbgPrintSpaceMap() {
+    Log.writeln("--vvv-- Space Map --vvv--");
+    for (int i = 0; i < spaceMap.length; i++) {
+      if (spaceMap[i] != null) {
+        Log.write(i);
+        Log.write(" : ");
+        Log.writeln(spaceMap[i].getName());
+        //Log.writeln(getChunkIndex(spaceMap[i].getStart())); //spaceMap[i].getIndex());
+      }
+    }
+    Log.writeln("--^^^-- Space Map --^^^--");
+    Log.writeln("--vvv-- Shared FL Map --vvv--");
+    for (int pr = 0; pr < sharedDiscontigFLCount; pr++) {
+      Log.write(sharedFLMap[pr].getHead());
+      Log.write(" : ");
+      Log.writeln(sharedFLMap[pr].getSpace().getName());
+    }
+    Log.writeln("--^^^-- Shared FL Map --^^^--");
   }
 
   @Override
@@ -286,8 +308,9 @@ public final class Map32 extends Map {
     int lastChunk = getChunkIndex(Space.getDiscontigEnd().minus(1));
     int pages = (1 + lastChunk - firstChunk) * VMLayoutConstants.PAGES_IN_CHUNK + 1;
     globalPageMap.resizeFreeList(pages, pages);
-    for (int pr = 0; pr < sharedDiscontigFLCount; pr++)
+    for (int pr = 0; pr < sharedDiscontigFLCount; pr++) {
       sharedFLMap[pr].resizeFreeList(startAddress);
+    }
 
     /* set up the region map free list */
     regionMap.alloc(firstChunk);       // block out entire bottom of address range
@@ -315,8 +338,10 @@ public final class Map32 extends Map {
       firstPage += VMLayoutConstants.PAGES_IN_CHUNK;
     }
     
+    regionMap.dbgPrintDetail();
     globalPageMap.dbgPrintDetail();
-
+    dbgPrintSpaceMap();
+    
     finalized  = true;
   }
 

@@ -82,6 +82,7 @@ public final class FreeListPageResource extends PageResource {
     this.metaDataPagesPerRegion = metaDataPagesPerRegion;
     int pages = Conversions.bytesToPages(bytes);
     freeList = HeapLayout.vmMap.createFreeList(this, pages, EmbeddedMetaData.PAGES_IN_REGION);
+    
     if (!growable) {
       pagesCurrentlyOnFreeList = pages;
       reserveMetaData(space.getExtent());
@@ -408,5 +409,9 @@ public final class FreeListPageResource extends PageResource {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert((VM.HEAP_LAYOUT_64BIT || !contiguous) && !Plan.isInitialized());
     start = Conversions.alignUp(startAddress,EmbeddedMetaData.LOG_BYTES_IN_REGION);
     freeList.resizeFreeList();
+  }
+
+  public int getHead() {
+    return freeList.getHead();
   }
 }
