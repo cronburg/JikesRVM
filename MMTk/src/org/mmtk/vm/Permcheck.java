@@ -18,7 +18,7 @@ import org.vmmagic.unboxed.*;
 @Uninterruptible
 public abstract class Permcheck {
   
-    public class Type {
+  public class Type {
     public static final byte UNMAPPED = 0x00;
     public static final byte PAGE = 0x01;
     public static final byte SPACE = 0x02;
@@ -60,5 +60,8 @@ public abstract class Permcheck {
   public abstract void a2b(Address rtn, Extent bytes, byte[] unmappedOrFreepage, byte page);
   public abstract void a2b(Address metaAddress, int bytes, byte[] from, byte to);
   public abstract void statusWord2Page(Address nodeToPayload);
+  
+  public abstract void acquireLock();
+  public abstract void releaseLock();
 
 }

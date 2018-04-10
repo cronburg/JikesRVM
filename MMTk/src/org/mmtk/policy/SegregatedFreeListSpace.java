@@ -493,6 +493,69 @@ public abstract class SegregatedFreeListSpace extends Space {
       }
     }
   }
+  
+  // permcheck
+  public void dbgPrintAllBlocks() {
+    VM.permcheck.acquireLock();
+    Log.flush();
+    Log.write("--vvv-- GC Cells ");
+    Log.write(this.getName());
+    Log.writeln(" --vvv--");
+    for (int sizeClass = 0; sizeClass < sizeClassCount(); sizeClass++) {
+      Extent blockSize = Extent.fromIntSignExtend(BlockAllocator.blockSize(blockSizeClass[sizeClass]));
+      dbgPrintSizeClassAllSame(sizeClass, blockSize, consumedBlockHead.get(sizeClass), "consumed", false);
+      dbgPrintSizeClassAllSame(sizeClass, blockSize, flushedBlockHead.get(sizeClass), "flushed", true);
+      dbgPrintSizeClass(sizeClass, blockSize, availableBlockHead.get(sizeClass), "available");
+    }
+    Log.write("--^^^-- GC Cells ");
+    Log.write(this.getName());
+    Log.writeln(" --^^^--");
+    Log.flush();
+    VM.permcheck.releaseLock();
+  }
+
+  // permcheck
+  private void dbgPrintSizeClassAllSame(int sizeClass, Extent blockSize, Address block, String name, boolean isFree) {
+
+    while (!block.isZero()) {
+      Address cursor = block.plus(blockHeaderSize[sizeClass]);
+      Address end = block.plus(blockSize);
+      Extent cellExtent = Extent.fromIntSignExtend(cellSize[sizeClass]);
+      Log.flush();
+      
+      Log.write(name);
+      Log.write(", ", HeapLayout.vmMap.getIndex(cursor));
+      Log.write(", ", isFree);
+      Log.write(", ", block);
+      Log.write(", ", cursor);
+      Log.write(", ", cellExtent);
+      Log.writeln(", ", end);
+
+      Log.flush();
+      block = BlockAllocator.getNext(block);
+    }
+  }
+
+  // permcheck
+  private void dbgPrintSizeClass(int sizeClass, Extent blockSize, Address block, String name) {
+    while (!block.isZero()) {
+      Address cursor = block.plus(blockHeaderSize[sizeClass]);
+      Address end = block.plus(blockSize);
+      Extent cellExtent = Extent.fromIntSignExtend(cellSize[sizeClass]);
+      while (cursor.LT(end)) {
+        ObjectReference current = VM.objectModel.getObjectFromStartAddress(cursor);
+        boolean free = (!current.isNull()) && (!isCellLive(current));
+        Log.write(name);
+        Log.write(", ", HeapLayout.vmMap.getIndex(cursor));
+        Log.write(", ", free);
+        Log.write(", ", cursor);
+        Log.writeln(", ", cellExtent);
+        
+        cursor = cursor.plus(cellExtent);
+      }
+      block = BlockAllocator.getNext(block);
+    }
+  }
 
   /**
    * Sweep all blocks for free objects.

@@ -13,7 +13,7 @@
 package org.mmtk.policy;
 
 import org.mmtk.utility.alloc.SegregatedFreeListLocal;
-
+import org.mmtk.vm.VM;
 import org.vmmagic.pragma.*;
 
 /**
@@ -71,5 +71,5 @@ public final class MarkSweepLocal extends SegregatedFreeListLocal<MarkSweepSpace
   /**
    * Finish up after a collection.
    */
-  public void release() {}
+  public void release() { }
 }

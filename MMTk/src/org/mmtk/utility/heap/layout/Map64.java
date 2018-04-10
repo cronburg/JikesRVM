@@ -313,4 +313,10 @@ public final class Map64 extends Map {
     return descriptorMap[spaceIndex(object)];
   }
 
+  // permcheck todo
+  @Override
+  public int getIndex(Address address) {
+    return spaceIndex(address);
+  }
+
 }

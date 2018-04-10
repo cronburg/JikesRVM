@@ -69,7 +69,7 @@ public class Permcheck {
   private static Offset lockOffset = Offset.max();
   
   @Inline
-  private static void acquireLock() {
+  public static void acquireLock() {
     if (!lockOffset.isMax()) {
       while(!Synchronization.testAndSet(Magic.getJTOC(), lockOffset, 1)) {
         ;
@@ -78,7 +78,7 @@ public class Permcheck {
   }
   
   @Inline
-  private static void releaseLock() {
+  public static void releaseLock() {
     if (!lockOffset.isMax()) {
       Synchronization.fetchAndStore(Magic.getJTOC(), lockOffset, 0);
     }

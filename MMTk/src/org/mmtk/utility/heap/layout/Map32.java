@@ -429,6 +429,11 @@ public final class Map32 extends Map {
   private static int getChunkIndex(Address address) {
     return address.toWord().rshl(LOG_BYTES_IN_CHUNK).toInt();
   }
+  
+  @Inline
+  public int getIndex(Address address) {
+    return getChunkIndex(address);
+  }
 
   @Inline
   private static Address addressForChunkIndex(int chunk) {

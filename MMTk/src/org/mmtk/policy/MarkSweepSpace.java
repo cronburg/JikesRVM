@@ -215,6 +215,7 @@ public final class MarkSweepSpace extends SegregatedFreeListSpace {
   public void release() {
     sweepConsumedBlocks(!EAGER_MARK_CLEAR);
     inMSCollection = false;
+    this.dbgPrintAllBlocks();
   }
 
   /**
