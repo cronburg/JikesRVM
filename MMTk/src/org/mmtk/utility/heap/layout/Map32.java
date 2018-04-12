@@ -182,6 +182,7 @@ public final class Map32 extends Map {
         }
       }
       lock.release();
+      
       return Address.zero();
     }
     totalAvailableDiscontiguousChunks -= chunks;
@@ -305,8 +306,11 @@ public final class Map32 extends Map {
     /* establish bounds of discontiguous space */
     Address startAddress = Space.getDiscontigStart();
     int firstChunk = getChunkIndex(startAddress);
-    int lastChunk = getChunkIndex(Space.getDiscontigEnd().minus(1));
-    int pages = (1 + lastChunk - firstChunk) * VMLayoutConstants.PAGES_IN_CHUNK + 1;
+    int lastChunk = getChunkIndex(Space.getDiscontigEnd());
+    int unavailStartChunk = lastChunk + 1;
+    int trailingChunks = VMLayoutConstants.MAX_CHUNKS - unavailStartChunk;
+
+    int pages = (1 + lastChunk - firstChunk) * VMLayoutConstants.PAGES_IN_CHUNK;
     globalPageMap.resizeFreeList(pages, pages);
     for (int pr = 0; pr < sharedDiscontigFLCount; pr++) {
       sharedFLMap[pr].resizeFreeList(startAddress);
@@ -316,8 +320,8 @@ public final class Map32 extends Map {
     regionMap.alloc(firstChunk);       // block out entire bottom of address range
     for (int chunkIndex = firstChunk; chunkIndex <= lastChunk; chunkIndex++)
       regionMap.alloc(1);             // Tentatively allocate all usable chunks
-    regionMap.alloc(VMLayoutConstants.MAX_CHUNKS - lastChunk);  // block out entire top of address range
-    Log.write("RVM-662 Hit\n");
+    regionMap.alloc(trailingChunks);  // block out entire top of address range
+    Log.write("RVM-662-cleanlog Hit\n");
     Log.writeln("firstChunk: ", firstChunk);
     Log.writeln("lastChunk: ", lastChunk);
     Log.writeln("pages: ", pages);
@@ -438,5 +442,14 @@ public final class Map32 extends Map {
   @Inline
   private static Address addressForChunkIndex(int chunk) {
     return Word.fromIntZeroExtend(chunk).lsh(LOG_BYTES_IN_CHUNK).toAddress();
+  }
+
+  @Override
+  public void dbgPrintFreeLists() {
+    // RVM-662 *clean* on OutOfMemory dump these:
+    regionMap.dbgPrintDetail();
+    globalPageMap.dbgPrintDetail();
+    dbgPrintSpaceMap();
+    Log.flush();
   }
 }

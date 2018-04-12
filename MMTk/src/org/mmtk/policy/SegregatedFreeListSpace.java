@@ -510,6 +510,7 @@ public abstract class SegregatedFreeListSpace extends Space {
     Log.write("--^^^-- GC Cells ");
     Log.write(this.getName());
     Log.writeln(" --^^^--");
+    //HeapLayout.vmMap.dbgPrintFreeLists();
     Log.flush();
     VM.permcheck.releaseLock();
   }

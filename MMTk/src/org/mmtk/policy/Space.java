@@ -199,7 +199,7 @@ public abstract class Space {
 
   /** @return The end of the discontiguous space */
   public static Address getDiscontigEnd() {
-    return heapLimit;
+    return heapLimit.minus(1);
   }
 
   /** @return The name of this space */

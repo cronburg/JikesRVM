@@ -319,4 +319,10 @@ public final class Map64 extends Map {
     return spaceIndex(address);
   }
 
+  // TODO permcheck
+  @Override
+  public void dbgPrintFreeLists() {
+    // TODO Auto-generated method stub
+  }
+
 }

@@ -14,7 +14,7 @@ package org.jikesrvm.mm.mmtk;
 
 import org.mmtk.plan.CollectorContext;
 import org.mmtk.plan.MutatorContext;
-
+import org.mmtk.utility.heap.layout.HeapLayout;
 import org.jikesrvm.VM;
 import org.jikesrvm.architecture.StackFrameLayout;
 import org.jikesrvm.mm.mminterface.MemoryManager;
@@ -79,6 +79,7 @@ public class Collection extends org.mmtk.vm.Collection {
   @Override
   @UninterruptibleNoWarn
   public void outOfMemory() {
+    HeapLayout.vmMap.dbgPrintFreeLists();
     throw RVMThread.getOutOfMemoryError();
   }
 

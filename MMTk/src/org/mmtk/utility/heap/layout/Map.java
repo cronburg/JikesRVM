@@ -176,4 +176,6 @@ public abstract class Map {
 
   public abstract int getIndex(Address address);
 
+  public abstract void dbgPrintFreeLists();
+
 }
