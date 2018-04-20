@@ -13,9 +13,10 @@
 package org.mmtk.policy;
 
 import org.mmtk.plan.TransitiveClosure;
+import org.mmtk.utility.Conversions;
 import org.mmtk.utility.heap.FreeListPageResource;
 import org.mmtk.utility.heap.VMRequest;
-
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -59,7 +60,10 @@ public final class RawPageSpace extends Space {
   @Override
   @Inline
   public void release(Address first) {
-    ((FreeListPageResource) pr).releasePages(first);
+    FreeListPageResource fpr = ((FreeListPageResource) pr);
+    Extent bytes = Conversions.pagesToBytes(fpr.numberOfPagesAt(first));
+    VM.permcheck.a2b(first, bytes, Permcheck.Type.FREE_SPACE, Permcheck.Type.SPACE);
+    fpr.releasePages(first);
   }
 
   /**

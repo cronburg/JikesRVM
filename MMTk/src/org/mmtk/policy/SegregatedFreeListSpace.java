@@ -241,9 +241,13 @@ public abstract class SegregatedFreeListSpace extends Space {
     Address nextCell;
     Address cell = firstCell;
     while ((nextCell = cell.plus(cellExtent)).LT(sentinel)) {
+      VM.permcheck.a2b(cell, cellExtent, Permcheck.Type.BLOCK, Permcheck.Type.FREE_CELL);
+      VM.permcheck.a2b(cell, 4, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
       cell.store(nextCell);
       cell = nextCell;
     }
+    VM.permcheck.a2b(cell, cellExtent, Permcheck.Type.BLOCK, Permcheck.Type.FREE_CELL);
+    VM.permcheck.a2b(cell, 4, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
 
     /* Populate the free list */
     freeList.set(sizeClass, firstCell);

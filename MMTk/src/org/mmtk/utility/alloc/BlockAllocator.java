@@ -85,7 +85,8 @@ public final class BlockAllocator {
     Address result = space.acquire(pages);
     if (!result.isZero()) {
       setBlkSizeMetaData(result, (byte) blockSizeClass);
-      VM.permcheck.a2b(result, pages << VM.LOG_BYTES_IN_PAGE, Permcheck.Type.PAGE, Permcheck.Type.BLOCK);
+      VM.permcheck.a2b(result, Conversions.pagesToBytes(pages), Permcheck.Type.FREE_SPACE, Permcheck.Type.BLOCK);
+      //VM.permcheck.a2b(result, pages << VM.LOG_BYTES_IN_PAGE, Permcheck.Type.PAGE, Permcheck.Type.BLOCK);
       //VM.permcheck.a2b(getMetaAddress(result), BYTES_IN_BLOCK_META, Permcheck.PAGE_OR_UNMAPPED, Permcheck.Type.BLOCK_META);
     }
     return result;
@@ -101,7 +102,7 @@ public final class BlockAllocator {
    */
   public static void free(Space space, Address block) {
     VM.permcheck.a2b(getMetaAddress(block), BYTES_IN_BLOCK_META, Permcheck.Type.BLOCK_META, Permcheck.Type.BLOCK);
-    VM.permcheck.a2b(block, blockSize(getBlkSizeClass(block)), Permcheck.BLOCK_OR_HIGHER, Permcheck.Type.PAGE);
+    VM.permcheck.a2b(block, blockSize(getBlkSizeClass(block)), Permcheck.BLOCK_OR_HIGHER, Permcheck.Type.FREE_SPACE);
     space.release(block);
   }
 

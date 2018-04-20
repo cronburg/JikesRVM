@@ -27,6 +27,7 @@ import org.mmtk.utility.HeaderByte;
 import org.mmtk.utility.Log;
 
 import org.mmtk.vm.Lock;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -273,6 +274,7 @@ public final class ImmixSpace extends Space {
     linesConsumed += lineUseCount;
 
     rtn = acquire(PAGES_IN_BLOCK);
+    VM.permcheck.a2b(rtn, Conversions.pagesToBytes(PAGES_IN_BLOCK), Permcheck.Type.FREE_SPACE, Permcheck.Type.IMMIX_BLOCK);
 
     if (VM.VERIFY_ASSERTIONS) {
       VM.assertions._assert(Block.isAligned(rtn));
@@ -351,6 +353,7 @@ public final class ImmixSpace extends Space {
   public void release(Address block) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(Block.isAligned(block));
     Block.setBlockAsUnallocated(block);
+    VM.permcheck.a2b(block, Conversions.pagesToBytes(PAGES_IN_BLOCK), Permcheck.Type.IMMIX_BLOCK, Permcheck.Type.SPACE);
     ((FreeListPageResource) pr).releasePages(block);
   }
 

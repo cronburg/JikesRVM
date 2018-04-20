@@ -147,5 +147,15 @@ public final class Permcheck extends org.mmtk.vm.Permcheck {
   public void statusWord2Page(Address address) {
     org.jikesrvm.objectmodel.Permcheck.statusWord2Page(address);
   }
+  
+  @Override
+  public void acquireLock() {
+    org.jikesrvm.objectmodel.Permcheck.acquireLock();
+  }
+  
+  @Override
+  public void releaseLock() {
+    org.jikesrvm.objectmodel.Permcheck.releaseLock();
+  }
 
 }

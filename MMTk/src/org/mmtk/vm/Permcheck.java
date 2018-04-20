@@ -18,7 +18,7 @@ import org.vmmagic.unboxed.*;
 @Uninterruptible
 public abstract class Permcheck {
   
-    public class Type {
+  public class Type {
     public static final byte UNMAPPED = 0x00;
     public static final byte PAGE = 0x01;
     public static final byte SPACE = 0x02;
@@ -27,11 +27,21 @@ public abstract class Permcheck {
     public static final byte STATUS_WORD = 0x05;
     public static final byte BLOCK_META = 0x06;
     public static final byte FREE_PAGE = 0x07;
+    public static final byte FREE_CELL = 0x08;
+    public static final byte FREE_CELL_NEXT_POINTER = 0x09;
+    public static final byte LARGE_OBJECT_SPACE = 0x0a;
+    public static final byte LARGE_OBJECT_HEADER = 0x0b;
+    public static final byte LOCK_WORD = 0x0c;
+    public static final byte FREE_SPACE = 0x0d;
+    public static final byte SHARED_DEQUE = 0x0e;
+    public static final byte HASH_TABLE = 0x0f;
+    public static final byte IMMIX_BLOCK = 0x10;
   }
-  public static final byte[] PAGE_OR_UNMAPPED = {Type.PAGE, Type.UNMAPPED};
-  public static final byte[] UNMAPPED_OR_FREEPAGE = {Type.UNMAPPED, Type.FREE_PAGE};
   public static final byte[] BLOCK_OR_HIGHER = {Type.BLOCK, Type.STATUS_WORD, Type.CELL};
-  public static final byte[] PAGE_OR_UNMAPPED_OR_FREEPAGE = {Type.PAGE, Type.UNMAPPED, Type.FREE_PAGE};
+  public static final byte[] PAGE_OR_LOWER = {Type.PAGE, Type.UNMAPPED, Type.FREE_PAGE};
+  public static final byte[] PAGE_OR_HIGHER =
+    { Type.PAGE, Type.SPACE, Type.BLOCK, Type.CELL, Type.STATUS_WORD, Type.BLOCK_META
+    , Type.FREE_PAGE, Type.FREE_CELL, Type.FREE_CELL_NEXT_POINTER, Type.LARGE_OBJECT_SPACE, Type.LARGE_OBJECT_HEADER};
   public abstract void a2b(Address addr, int extent, byte expectedCurrType, byte newType);
   public abstract void freeCell(ObjectReference object);
   public abstract void freeCell(Address addr);
@@ -60,5 +70,8 @@ public abstract class Permcheck {
   public abstract void a2b(Address rtn, Extent bytes, byte[] unmappedOrFreepage, byte page);
   public abstract void a2b(Address metaAddress, int bytes, byte[] from, byte to);
   public abstract void statusWord2Page(Address nodeToPayload);
+  
+  public abstract void acquireLock();
+  public abstract void releaseLock();
 
 }

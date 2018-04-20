@@ -16,8 +16,10 @@ import static org.mmtk.utility.Constants.*;
 
 import org.mmtk.policy.RawPageSpace;
 import org.mmtk.policy.Space;
+import org.mmtk.utility.Conversions;
 import org.mmtk.utility.Log;
 import org.mmtk.vm.Lock;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 import org.vmmagic.pragma.Entrypoint;
 import org.vmmagic.pragma.Inline;
@@ -185,6 +187,7 @@ public class SharedDeque extends Deque {
       Space.printUsageMB();
       VM.assertions.fail("Failed to allocate space for queue.  Is metadata virtual memory exhausted?");
     }
+    VM.permcheck.a2b(rtn, Conversions.pagesToBytes(PAGES_PER_BUFFER), Permcheck.Type.FREE_SPACE, Permcheck.Type.SHARED_DEQUE);
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(rtn.EQ(bufferStart(rtn)));
     return rtn;
   }
@@ -192,6 +195,7 @@ public class SharedDeque extends Deque {
   @Inline
   final void free(Address buf) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(buf.EQ(bufferStart(buf)) && !buf.isZero());
+    VM.permcheck.a2b(buf, Conversions.pagesToBytes(PAGES_PER_BUFFER), Permcheck.Type.SHARED_DEQUE, Permcheck.Type.FREE_SPACE);
     rps.release(buf);
   }
 

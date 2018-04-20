@@ -950,4 +950,9 @@ public class Log {
   private char[] getTempBuffer() {
     return tempBuffer;
   }
+
+  public static void write(String s, boolean free) {
+    Log.write(s);
+    Log.write(free);
+  }
 }

@@ -21,7 +21,7 @@ import org.mmtk.utility.alloc.EmbeddedMetaData;
 import org.mmtk.utility.heap.layout.HeapLayout;
 import org.mmtk.utility.heap.layout.VMLayoutConstants;
 import org.mmtk.utility.options.Options;
-
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.Inline;
@@ -196,6 +196,8 @@ public final class MonotonePageResource extends PageResource {
         }
       }
       VM.events.tracePageAcquired(space, rtn, requiredPages);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.Type.UNMAPPED, Permcheck.Type.PAGE);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.Type.PAGE, Permcheck.Type.FREE_PAGE);
       return rtn;
     }
   }
@@ -281,6 +283,7 @@ public final class MonotonePageResource extends PageResource {
   @Inline
   private void releasePages() {
     if (contiguous) {
+      VM.permcheck.a2b(currentChunk, cursor.diff(currentChunk).toWord().toExtent(), Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
       // TODO: We will perform unnecessary zeroing if the nursery size has decreased.
       if (zeroConcurrent) {
         // Wait for current zeroing to finish.
@@ -341,6 +344,8 @@ public final class MonotonePageResource extends PageResource {
       VM.memory.zero(false, first, bytes);
     if (Options.protectOnRelease.getValue())
       HeapLayout.mmapper.protect(first, pages);
+    //VM.permcheck.a2b(first, bytes, Permcheck.PAGE_OR_HIGHER, Permcheck.Type.FREE_PAGE);
+    VM.permcheck.a2b(first, bytes, Permcheck.PAGE_OR_HIGHER, Permcheck.Type.FREE_PAGE);
     VM.events.tracePageReleased(space, first, pages);
   }
 

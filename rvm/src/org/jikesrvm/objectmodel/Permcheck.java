@@ -12,6 +12,7 @@ import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.utility.Constants;
 import org.mmtk.utility.Log;
+import org.mmtk.utility.heap.layout.HeapLayout;
 import org.vmmagic.pragma.Entrypoint;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Uninterruptible;
@@ -32,10 +33,18 @@ public class Permcheck {
     public static final byte SPACE = 0x02;
     public static final byte BLOCK = 0x03;
     public static final byte CELL = 0x04;
-    public static final byte LOCK_WORD = 0x05;
     public static final byte STATUS_WORD = 0x05;
     public static final byte BLOCK_META = 0x06;
     public static final byte FREE_PAGE = 0x07;
+    public static final byte FREE_CELL = 0x08;
+    public static final byte FREE_CELL_NEXT_POINTER = 0x09;
+    public static final byte LARGE_OBJECT_SPACE = 0x0a;
+    public static final byte LARGE_OBJECT_HEADER = 0x0b;
+    public static final byte LOCK_WORD = 0x0c;
+    public static final byte FREE_SPACE = 0x0d;
+    public static final byte SHARED_DEQUE = 0x0e;
+    public static final byte HASH_TABLE = 0x0f;
+    public static final byte IMMIX_BLOCK = 0x10;
   }
   
   public class JavaType {
@@ -56,9 +65,18 @@ public class Permcheck {
     	case Type.SPACE: Log.write("SPACE"); break;
     	case Type.BLOCK: Log.write("BLOCK"); break;
     	case Type.CELL:  Log.write("CELL");  break;
+      case Type.LOCK_WORD:  Log.write("LOCK_WORD");  break;
     	case Type.STATUS_WORD: Log.write("STATUS_WORD"); break;
       case Type.BLOCK_META: Log.write("BLOCK_META"); break;
       case Type.FREE_PAGE: Log.write("FREE_PAGE"); break;
+      case Type.FREE_CELL: Log.write("FREE_CELL"); break;
+      case Type.FREE_CELL_NEXT_POINTER: Log.write("FREE_CELL_NEXT_POINTER"); break;
+      case Type.LARGE_OBJECT_SPACE: Log.write("LARGE_OBJECT_SPACE"); break;
+      case Type.LARGE_OBJECT_HEADER: Log.write("LARGE_OBJECT_HEADER"); break;
+      case Type.FREE_SPACE: Log.write("FREE_SPACE"); break;
+      case Type.SHARED_DEQUE: Log.write("SHARED_DEQUEUE"); break;
+      case Type.HASH_TABLE: Log.write("HASH_TABLE"); break;
+      case Type.IMMIX_BLOCK: Log.write("IMMIX_BLOCK"); break;
     	default: Log.write(type);
     }
   }
@@ -69,7 +87,7 @@ public class Permcheck {
   private static Offset lockOffset = Offset.max();
   
   @Inline
-  private static void acquireLock() {
+  public static void acquireLock() {
     if (!lockOffset.isMax()) {
       while(!Synchronization.testAndSet(Magic.getJTOC(), lockOffset, 1)) {
         ;
@@ -78,7 +96,7 @@ public class Permcheck {
   }
   
   @Inline
-  private static void releaseLock() {
+  public static void releaseLock() {
     if (!lockOffset.isMax()) {
       Synchronization.fetchAndStore(Magic.getJTOC(), lockOffset, 0);
     }
@@ -134,6 +152,16 @@ public class Permcheck {
       }
       Log.writeHexChars(Word.fromIntZeroExtend(ty), 1);
     }
+    Log.writeln();
+  }
+  
+  private static void spaceInfo(Address addr) {
+    Space spaceIn = Space.getSpaceForAddress(addr);
+    Log.write("          Space = ");
+    Log.write(spaceIn.getName());
+    Log.write(", descr=", spaceIn.getDescriptor());
+    Log.write(", chunk idx=", HeapLayout.vmMap.getIndex(addr));
+    Log.writeln();
   }
   
   private static void writeBad(Address addr, byte[] expectedCurrTypes, byte newType, byte currType, int i, int j, int extent) {
@@ -153,6 +181,8 @@ public class Permcheck {
     Log.write(",", addr.plus(extent));
     Log.writeln(")");
     Log.writeln("          nbytes = ", extent);
+    
+    spaceInfo(addr);
     
     writeSurroundingPage(addr, extent, i);
     
@@ -178,6 +208,8 @@ public class Permcheck {
     Log.write(",", addr.plus(extent));
     Log.writeln(")");
     Log.writeln("          nbytes = ", extent);
+    
+    spaceInfo(addr);
     
     writeSurroundingPage(addr, extent, i);
     

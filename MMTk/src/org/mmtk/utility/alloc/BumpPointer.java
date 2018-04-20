@@ -25,6 +25,7 @@ import org.mmtk.policy.Space;
 import org.mmtk.utility.Conversions;
 import org.mmtk.utility.Log;
 import org.mmtk.utility.gcspy.drivers.LinearSpaceDriver;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.NoInline;
@@ -184,6 +185,7 @@ import org.vmmagic.unboxed.Word;
     fillAlignmentGap(cursor, start);
     cursor = end;
     end.plus(SIZE_OF_TWO_X86_CACHE_LINES_IN_BYTES).prefetch();
+    VM.permcheck.a2b(start, bytes, Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_CELL);
     return start;
   }
 
@@ -302,6 +304,8 @@ import org.vmmagic.unboxed.Word;
     Address start = space.acquire(Conversions.bytesToPages(blockSize));
 
     if (start.isZero()) return start; // failed allocation
+    
+    VM.permcheck.a2b(start, Conversions.pagesToBytes(Conversions.bytesToPages(blockSize)), Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_CELL);
 
     if (!allowScanning) { // simple allocator
       if (start.NE(limit)) cursor = start;  // discontiguous

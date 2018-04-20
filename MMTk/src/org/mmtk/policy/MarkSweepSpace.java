@@ -20,7 +20,7 @@ import org.mmtk.utility.options.Options;
 import org.mmtk.utility.options.MarkSweepMarkBits;
 import org.mmtk.utility.options.EagerCompleteSweep;
 import org.mmtk.utility.HeaderByte;
-
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;

@@ -15,6 +15,7 @@ package org.mmtk.utility;
 import static org.mmtk.utility.Constants.*;
 
 import org.mmtk.policy.RawPageSpace;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -75,6 +76,7 @@ import org.vmmagic.unboxed.*;
    */
   public final void acquireTable() {
     base = space.acquire(Conversions.bytesToPages(size));
+    VM.permcheck.a2b(base, size, Permcheck.Type.FREE_SPACE, Permcheck.Type.HASH_TABLE);
     VM.memory.zero(false, base, size);
     valid = true;
   }
@@ -83,6 +85,7 @@ import org.vmmagic.unboxed.*;
    * Drop the table (after collection).
    */
   public final void releaseTable() {
+    VM.permcheck.a2b(base, size, Permcheck.Type.HASH_TABLE, Permcheck.Type.FREE_SPACE);
     space.release(base);
     valid = false;
   }

@@ -1037,7 +1037,7 @@ public class JavaHeader {
    * @return the object whose header was initialized
    */
   public static Object initializeScalarHeader(Address ptr, TIB tib, int size) {
-    Permcheck.a2b(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.BLOCK, Permcheck.Type.STATUS_WORD);
+    Permcheck.a2b(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.FREE_CELL, Permcheck.Type.STATUS_WORD);
     Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
     // (TIB set by ObjectModel)
     Object ref = Magic.addressAsObject(ptr.plus(OBJECT_REF_OFFSET));
@@ -1062,7 +1062,7 @@ public class JavaHeader {
   public static Address initializeScalarHeader(BootImageInterface bootImage, Address ptr, TIB tib, int size, boolean needsIdentityHash, int identityHashValue) {
     Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
-    Permcheck.a2b(ref.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.BLOCK, Permcheck.Type.STATUS_WORD);
+    Permcheck.a2b(ref.plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.FREE_CELL, Permcheck.Type.STATUS_WORD);
     if (needsIdentityHash) {
       Permcheck.canWrite(Permcheck.Type.STATUS_WORD, true);
       bootImage.setFullWord(ref.plus(STATUS_OFFSET), HASH_STATE_HASHED_AND_MOVED.toInt());
@@ -1094,7 +1094,7 @@ public class JavaHeader {
   public static Object initializeArrayHeader(Address ptr, TIB tib, int size) {
     Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
     Object ref = Magic.addressAsObject(ptr.plus(OBJECT_REF_OFFSET));
-    Permcheck.many2b(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.BLOCK_OR_PAGE, Permcheck.Type.STATUS_WORD);
+    Permcheck.a2b(ptr.plus(OBJECT_REF_OFFSET).plus(JavaHeader.STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.FREE_CELL, Permcheck.Type.STATUS_WORD);
     // (TIB and array length set by ObjectModel)
     return ref;
   }
@@ -1115,7 +1115,7 @@ public class JavaHeader {
   public static Address initializeArrayHeader(BootImageInterface bootImage, Address ptr, TIB tib, int size, int numElements, boolean needsIdentityHash, int identityHashValue) {
     Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
     Address ref = ptr.plus(OBJECT_REF_OFFSET);
-    Permcheck.a2b(ref.plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.BLOCK, Permcheck.Type.STATUS_WORD);
+    Permcheck.a2b(ref.plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.FREE_CELL, Permcheck.Type.STATUS_WORD);
     // (TIB set by BootImageWriter; array length set by ObjectModel)
     if (needsIdentityHash) {
       Permcheck.canWrite(Permcheck.Type.STATUS_WORD, true);

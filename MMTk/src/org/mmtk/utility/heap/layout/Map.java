@@ -172,5 +172,10 @@ public abstract class Map {
    * resides
    */
   public abstract int getDescriptorForAddress(Address object);
+  
+
+  public abstract int getIndex(Address address);
+
+  public abstract void dbgPrintFreeLists();
 
 }

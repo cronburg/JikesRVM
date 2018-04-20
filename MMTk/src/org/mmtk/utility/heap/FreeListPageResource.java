@@ -187,7 +187,8 @@ public final class FreeListPageResource extends PageResource {
       if (zeroed)
         VM.memory.zero(zeroNT, rtn, bytes);
       VM.events.tracePageAcquired(space, rtn, requiredPages);
-      VM.permcheck.a2b(rtn, bytes, Permcheck.PAGE_OR_UNMAPPED_OR_FREEPAGE, Permcheck.Type.PAGE);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.PAGE_OR_LOWER, Permcheck.Type.PAGE);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.Type.PAGE, Permcheck.Type.FREE_PAGE);
       return rtn;
     }
   }
@@ -227,8 +228,14 @@ public final class FreeListPageResource extends PageResource {
 
     unlock();
 
-    VM.permcheck.a2b(first, Conversions.pagesToBytes(pages), Permcheck.PAGE_OR_UNMAPPED_OR_FREEPAGE, Permcheck.Type.FREE_PAGE);
+    VM.permcheck.a2b(first, Conversions.pagesToBytes(pages), Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
     VM.events.tracePageReleased(space, first, pages);
+  }
+  
+  @Inline
+  public int numberOfPagesAt(Address first) {
+    int pageOffset = Conversions.bytesToPages(first.diff(start));
+    return freeList.size(pageOffset);
   }
 
   /**

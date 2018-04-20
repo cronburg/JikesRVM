@@ -26,7 +26,7 @@ import org.mmtk.utility.heap.layout.HeapLayout;
 import org.mmtk.utility.options.Options;
 import org.mmtk.utility.Conversions;
 import org.mmtk.utility.Log;
-
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -454,6 +454,8 @@ public abstract class Space {
       VM.collection.blockForGC();
       return Address.zero();
     }
+    VM.permcheck.a2b(rtn, Conversions.pagesToBytes(pages), Permcheck.Type.FREE_PAGE, Permcheck.Type.SPACE);
+    VM.permcheck.a2b(rtn, Conversions.pagesToBytes(pages), Permcheck.Type.SPACE, Permcheck.Type.FREE_SPACE);
 
     return rtn;
   }
