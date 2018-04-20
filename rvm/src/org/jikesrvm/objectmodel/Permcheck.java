@@ -12,6 +12,7 @@ import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.utility.Constants;
 import org.mmtk.utility.Log;
+import org.mmtk.utility.heap.layout.HeapLayout;
 import org.vmmagic.pragma.Entrypoint;
 import org.vmmagic.pragma.Inline;
 import org.vmmagic.pragma.Uninterruptible;
@@ -134,6 +135,7 @@ public class Permcheck {
       }
       Log.writeHexChars(Word.fromIntZeroExtend(ty), 1);
     }
+    Log.writeln();
   }
   
   private static void writeBad(Address addr, byte[] expectedCurrTypes, byte newType, byte currType, int i, int j, int extent) {
@@ -153,6 +155,13 @@ public class Permcheck {
     Log.write(",", addr.plus(extent));
     Log.writeln(")");
     Log.writeln("          nbytes = ", extent);
+    
+    Space spaceIn = Space.getSpaceForAddress(addr);
+    Log.write("          Space = ");
+    Log.write(spaceIn.getName());
+    Log.write(", descr=", spaceIn.getDescriptor());
+    Log.write(", chunk idx=", HeapLayout.vmMap.getIndex(addr));
+    Log.writeln();
     
     writeSurroundingPage(addr, extent, i);
     
