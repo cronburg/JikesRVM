@@ -63,6 +63,7 @@ public final class RawPageSpace extends Space {
     FreeListPageResource fpr = ((FreeListPageResource) pr);
     Extent bytes = Conversions.pagesToBytes(fpr.numberOfPagesAt(first));
     VM.permcheck.a2b(first, bytes, Permcheck.Type.FREE_SPACE, Permcheck.Type.SPACE);
+    VM.permcheck.a2b(first, bytes, Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
     fpr.releasePages(first);
   }
 

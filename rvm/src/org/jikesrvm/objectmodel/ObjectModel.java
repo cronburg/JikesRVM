@@ -15,6 +15,7 @@ package org.jikesrvm.objectmodel;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.ADDRESS_BASED_HASHING;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.ARRAY_LENGTH_OFFSET;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.HASHCODE_BYTES;
+import static org.jikesrvm.objectmodel.JavaHeaderConstants.TIB_BYTES;
 import static org.jikesrvm.runtime.JavaSizeConstants.BYTES_IN_INT;
 
 import org.jikesrvm.VM;
@@ -195,6 +196,12 @@ public class ObjectModel {
 
   public static void setTIB(Object ref, TIB tib) {
     JavaHeader.setTIB(ref, tib);
+  }
+  
+  public static void setNewTIB(Object ref, TIB tib) {
+    // Only ever set the TIB once, so it should always be coming from a FREE_CELL (might make more sense to do this at the call site)
+    Permcheck.a2b(ObjectReference.fromObject(ref).toAddress().plus(JavaHeader.getTibOffset()), TIB_BYTES, Permcheck.Type.FREE_CELL, Permcheck.Type.TIB_POINTER);
+    setTIB(ref, tib);
   }
 
   /**
@@ -885,7 +892,7 @@ public class ObjectModel {
   public static Object initializeScalar(Address ptr, TIB tib, int size) {
     Object ref = JavaHeader.initializeScalarHeader(ptr, tib, size);
     MiscHeader.initializeHeader(ref, tib, size, true);
-    setTIB(ref, tib);
+    setNewTIB(ref, tib);
     return ref;
   }
 
@@ -953,7 +960,7 @@ public class ObjectModel {
   public static Object initializeArray(Address ptr, TIB tib, int numElems, int size) {
     Object ref = JavaHeader.initializeArrayHeader(ptr, tib, size);
     MiscHeader.initializeHeader(ref, tib, size, false);
-    setTIB(ref, tib);
+    setNewTIB(ref, tib);
     setArrayLength(ref, numElems);
     return ref;
   }

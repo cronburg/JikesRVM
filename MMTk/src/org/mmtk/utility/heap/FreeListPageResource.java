@@ -228,7 +228,7 @@ public final class FreeListPageResource extends PageResource {
 
     unlock();
 
-    VM.permcheck.a2b(first, Conversions.pagesToBytes(pages), Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
+    VM.permcheck.a2b(first, Conversions.pagesToBytes(pages), Permcheck.Type.FREE_PAGE, Permcheck.Type.PAGE);
     VM.events.tracePageReleased(space, first, pages);
   }
   

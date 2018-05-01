@@ -29,6 +29,7 @@ import static org.jikesrvm.objectmodel.JavaHeaderConstants.JAVA_HEADER_OFFSET;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.NUM_AVAILABLE_BITS;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.OTHER_HEADER_BYTES;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.STATUS_BYTES;
+import static org.jikesrvm.objectmodel.JavaHeaderConstants.TIB_BYTES;
 import static org.jikesrvm.objectmodel.MiscHeader.REQUESTED_BITS;
 import static org.jikesrvm.runtime.JavaSizeConstants.BYTES_IN_INT;
 import static org.jikesrvm.runtime.UnboxedSizeConstants.LOG_BYTES_IN_ADDRESS;
@@ -96,7 +97,7 @@ public class JavaHeader {
   /** offset of object reference from the lowest memory word */
   public static final int OBJECT_REF_OFFSET = ARRAY_HEADER_SIZE;  // from start to ref
   protected static final Offset TIB_OFFSET = JAVA_HEADER_OFFSET;
-  protected static final Offset STATUS_OFFSET = TIB_OFFSET.plus(STATUS_BYTES);
+  protected static final Offset STATUS_OFFSET = TIB_OFFSET.plus(TIB_BYTES);
   protected static final Offset AVAILABLE_BITS_OFFSET =
       VM.LittleEndian ? (STATUS_OFFSET) : (STATUS_OFFSET.plus(STATUS_BYTES - 1));
 
@@ -218,7 +219,10 @@ public class JavaHeader {
    * @return the TIB for an object.
    */
   public static TIB getTIB(Object o) {
-    return Magic.getTIBAtOffset(o, TIB_OFFSET);
+    Permcheck.canRead(Permcheck.Type.TIB_POINTER, true);
+    TIB ret = Magic.getTIBAtOffset(o, TIB_OFFSET);
+    Permcheck.canRead(Permcheck.Type.TIB_POINTER, false);
+    return ret;
   }
 
   /**
@@ -228,7 +232,9 @@ public class JavaHeader {
    * @param tib the TIB to set for the object
    */
   public static void setTIB(Object ref, TIB tib) {
+    Permcheck.canWrite(Permcheck.Type.TIB_POINTER, true);
     Magic.setObjectAtOffset(ref, TIB_OFFSET, tib);
+    Permcheck.canWrite(Permcheck.Type.TIB_POINTER, false);
   }
 
   /**
@@ -335,7 +341,9 @@ public class JavaHeader {
   public static Address objectStartRef(ObjectReference obj) {
     if (MOVES_OBJECTS) {
       if (ADDRESS_BASED_HASHING && !DYNAMIC_HASH_OFFSET) {
+        Permcheck.canRead(Permcheck.Type.STATUS_WORD, true);
         Word hashState = obj.toAddress().loadWord(STATUS_OFFSET).and(HASH_STATE_MASK);
+        Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
         if (hashState.EQ(HASH_STATE_HASHED_AND_MOVED)) {
           return obj.toAddress().minus(OBJECT_REF_OFFSET + HASHCODE_BYTES);
         }
@@ -356,9 +364,13 @@ public class JavaHeader {
    */
   public static ObjectReference getObjectFromStartAddress(Address start) {
     /* Skip over any alignment fill */
+    Permcheck.canRead(Permcheck.Type.ALIGNMENT_FILL, true);
+    Permcheck.canRead(Permcheck.Type.STATUS_WORD, true);
     while ((start.loadInt()) == ALIGNMENT_VALUE) {
       start = start.plus(BYTES_IN_INT);
     }
+    Permcheck.canRead(Permcheck.Type.ALIGNMENT_FILL, false);
+    Permcheck.canRead(Permcheck.Type.STATUS_WORD, false);
     return start.plus(OBJECT_REF_OFFSET).toObjectReference();
   }
 
@@ -578,7 +590,11 @@ public class JavaHeader {
     Address fromAddress = Magic.objectAsAddress(fromObj).minus(objRefOffset);
 
     // Do the copy
+    Permcheck.canReadWrite(Permcheck.Type.CELL, true);
+    Permcheck.canReadWrite(Permcheck.Type.STATUS_WORD, true);
     Memory.aligned32Copy(toAddress, fromAddress, copyBytes);
+    Permcheck.canReadWrite(Permcheck.Type.STATUS_WORD, false);
+    Permcheck.canReadWrite(Permcheck.Type.CELL, false);
 
     if (toObj == null) {
       toObj = Magic.addressAsObject(toAddress.plus(objRefOffset));

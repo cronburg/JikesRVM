@@ -13,7 +13,9 @@
 package org.mmtk.utility.alloc;
 
 import org.mmtk.policy.SegregatedFreeListSpace;
+import org.mmtk.utility.Constants;
 import org.mmtk.utility.Log;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.pragma.*;
@@ -133,7 +135,10 @@ public abstract class SegregatedFreeListLocal<S extends SegregatedFreeListSpace>
 
     freeList.set(sizeClass, cell.loadAddress());
     /* Clear the free list link */
+    VM.permcheck.a2b(cell, Constants.BYTES_IN_ADDRESS, Permcheck.Type.FREE_CELL_NEXT_POINTER, Permcheck.Type.FREE_CELL);
+    VM.permcheck.canWrite(Permcheck.Type.FREE_CELL, true);
     cell.store(Address.zero());
+    VM.permcheck.canWrite(Permcheck.Type.FREE_CELL, false);
     return alignAllocation(cell, align, offset);
   }
 

@@ -182,10 +182,10 @@ import org.vmmagic.unboxed.Word;
     Address end = start.plus(bytes);
     if (end.GT(internalLimit))
       return allocSlow(start, end, align, offset);
+    VM.permcheck.a2b(cursor, end.diff(cursor).toInt(), Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_CELL);
     fillAlignmentGap(cursor, start);
     cursor = end;
     end.plus(SIZE_OF_TWO_X86_CACHE_LINES_IN_BYTES).prefetch();
-    VM.permcheck.a2b(start, bytes, Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_CELL);
     return start;
   }
 
@@ -305,7 +305,7 @@ import org.vmmagic.unboxed.Word;
 
     if (start.isZero()) return start; // failed allocation
     
-    VM.permcheck.a2b(start, Conversions.pagesToBytes(Conversions.bytesToPages(blockSize)), Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_CELL);
+    VM.permcheck.a2b(start, Conversions.pagesToBytes(Conversions.bytesToPages(blockSize)), Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_SPACE);
 
     if (!allowScanning) { // simple allocator
       if (start.NE(limit)) cursor = start;  // discontiguous

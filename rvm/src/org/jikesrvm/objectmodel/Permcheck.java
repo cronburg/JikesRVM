@@ -45,6 +45,9 @@ public class Permcheck {
     public static final byte SHARED_DEQUE = 0x0e;
     public static final byte HASH_TABLE = 0x0f;
     public static final byte IMMIX_BLOCK = 0x10;
+    public static final byte ALLOCATOR = 0x11;
+    public static final byte TIB_POINTER = 0x12;
+    public static final byte ALIGNMENT_FILL = 0x13;
   }
   
   public class JavaType {
@@ -77,6 +80,8 @@ public class Permcheck {
       case Type.SHARED_DEQUE: Log.write("SHARED_DEQUEUE"); break;
       case Type.HASH_TABLE: Log.write("HASH_TABLE"); break;
       case Type.IMMIX_BLOCK: Log.write("IMMIX_BLOCK"); break;
+      case Type.TIB_POINTER: Log.write("TIB_POINTER"); break;
+      case Type.ALIGNMENT_FILL: Log.write("ALIGNMENT_FILL"); break;
     	default: Log.write(type);
     }
   }
@@ -148,9 +153,12 @@ public class Permcheck {
       if (m % 64 == 0) {
         Log.writeln();
         Log.write(addr.plus(m));
-        Log.write(": ");
+        Log.write(":");
       }
-      Log.writeHexChars(Word.fromIntZeroExtend(ty), 1);
+      if ((m % 64) % Constants.BYTES_IN_WORD == 0) {
+        Log.write(" ");
+      }
+      Log.writeHexChars(Word.fromIntZeroExtend(ty), 2);
     }
     Log.writeln();
   }
@@ -229,8 +237,6 @@ public class Permcheck {
       //Log.write(", "); Log.write(expectedCurrType);
       //Log.write(", "); Log.write(increment); Log.writeln(")");
       
-      
-      
       for (int i = 0; i < extent; i++) {
         if (!error && check) {
           byte currType = getBits(0, addr.plus(i));
@@ -266,8 +272,11 @@ public class Permcheck {
   public static void freeCell(ObjectReference object) {
   	//Address endAddr = ObjectModel.getObjectEndAddress(object);
     //Address startAddr = ObjectModel.objectStartRef(object);
-    statusWord2Block(object);
     //unmarkData(startAddr, endAddr.minus(startAddr.toInt()).toInt(), Type.CELL);
+    
+    //statusWord2Block(object);
+    a2b(object.toAddress(), Constants.BYTES_IN_ADDRESS, Type.TIB_POINTER, Type.FREE_CELL);
+    a2b(object.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_ADDRESS, Type.STATUS_WORD, Type.FREE_CELL);
   }
   
   @Inline
@@ -312,13 +321,13 @@ public class Permcheck {
   
   @Inline
   public static void block2StatusWord(ObjectReference o) {
-    Permcheck.a2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Permcheck.Type.UNMAPPED, Permcheck.Type.STATUS_WORD);
+    a2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, Type.UNMAPPED, Type.STATUS_WORD);
   }
   private static byte[] swORb = {Type.STATUS_WORD, Type.BLOCK, Type.UNMAPPED};
   
   @Inline
   public static void statusWord2Block(ObjectReference o) {
-    Permcheck.many2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, swORb, Type.BLOCK);
+    many2b(o.toAddress().plus(STATUS_OFFSET), Constants.BYTES_IN_WORD, swORb, Type.BLOCK);
   }
 
   @Inline

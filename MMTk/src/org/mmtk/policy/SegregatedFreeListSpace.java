@@ -14,6 +14,7 @@ package org.mmtk.policy;
 
 import static org.mmtk.utility.Constants.*;
 
+import org.mmtk.utility.Constants;
 import org.mmtk.utility.alloc.BlockAllocator;
 import org.mmtk.utility.alloc.EmbeddedMetaData;
 import org.mmtk.utility.heap.FreeListPageResource;
@@ -242,12 +243,12 @@ public abstract class SegregatedFreeListSpace extends Space {
     Address cell = firstCell;
     while ((nextCell = cell.plus(cellExtent)).LT(sentinel)) {
       VM.permcheck.a2b(cell, cellExtent, Permcheck.Type.BLOCK, Permcheck.Type.FREE_CELL);
-      VM.permcheck.a2b(cell, 4, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
+      VM.permcheck.a2b(cell, Constants.BYTES_IN_ADDRESS, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
       cell.store(nextCell);
       cell = nextCell;
     }
     VM.permcheck.a2b(cell, cellExtent, Permcheck.Type.BLOCK, Permcheck.Type.FREE_CELL);
-    VM.permcheck.a2b(cell, 4, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
+    VM.permcheck.a2b(cell, Constants.BYTES_IN_ADDRESS, Permcheck.Type.FREE_CELL, Permcheck.Type.FREE_CELL_NEXT_POINTER);
 
     /* Populate the free list */
     freeList.set(sizeClass, firstCell);

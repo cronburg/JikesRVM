@@ -15,6 +15,7 @@ package org.mmtk.utility.alloc;
 import static org.mmtk.utility.Constants.*;
 
 import org.mmtk.vm.Lock;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.plan.Plan;
 import org.mmtk.policy.Space;
 import org.mmtk.utility.*;
@@ -126,6 +127,8 @@ public abstract class Allocator {
    */
   @Inline
   public static void fillAlignmentGap(Address start, Address end) {
+    VM.permcheck.a2b(start, end.diff(start).toInt(), Permcheck.Type.FREE_CELL, Permcheck.Type.ALIGNMENT_FILL);
+    VM.permcheck.canWrite(Permcheck.Type.ALIGNMENT_FILL, true);
     if ((MAX_ALIGNMENT - MIN_ALIGNMENT) == BYTES_IN_INT) {
       // At most a single hole
       if (!end.diff(start).isZero()) {
@@ -137,6 +140,8 @@ public abstract class Allocator {
         start = start.plus(BYTES_IN_INT);
       }
     }
+    VM.permcheck.canWrite(Permcheck.Type.ALIGNMENT_FILL, false);
+    VM.permcheck.canRead(Permcheck.Type.ALIGNMENT_FILL, false);
   }
 
   /**

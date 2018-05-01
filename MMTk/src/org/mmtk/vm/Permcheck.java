@@ -36,6 +36,9 @@ public abstract class Permcheck {
     public static final byte SHARED_DEQUE = 0x0e;
     public static final byte HASH_TABLE = 0x0f;
     public static final byte IMMIX_BLOCK = 0x10;
+    public static final byte ALLOCATOR = 0x11;
+    public static final byte TIB_POINTER = 0x12;
+    public static final byte ALIGNMENT_FILL = 0x13;
   }
   public static final byte[] BLOCK_OR_HIGHER = {Type.BLOCK, Type.STATUS_WORD, Type.CELL};
   public static final byte[] PAGE_OR_LOWER = {Type.PAGE, Type.UNMAPPED, Type.FREE_PAGE};
