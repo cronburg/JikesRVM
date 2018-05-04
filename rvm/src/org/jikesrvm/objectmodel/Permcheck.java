@@ -231,11 +231,16 @@ public class Permcheck {
     // Can't do any allocations in here because we're running in the VM but not necessarily VM.fullyBooted
     if (VM.runningVM) {
       acquireLock();
-      
-      //Log.write("Mark("); Log.write(addr);
-      //Log.write(", "); Log.write(extent);
-      //Log.write(", "); Log.write(expectedCurrType);
-      //Log.write(", "); Log.write(increment); Log.writeln(")");
+
+      /*
+      Space spaceIn = Space.getSpaceForAddress(addr);
+      Log.write("Mark("); Log.write(addr);
+      Log.write(", "); Log.write(spaceIn.getName());
+      Log.write(", "); Log.write(extent);
+      Log.write(", "); writeType(expectedCurrType);
+      Log.write(" -> "); writeType(newType);
+      Log.write(", "); Log.write(")");
+      Log.flush();*/
       
       for (int i = 0; i < extent; i++) {
         if (!error && check) {
@@ -264,6 +269,9 @@ public class Permcheck {
         // TODO: Set all bits at the same time.
         setBits(0, addr.plus(i), newType);
       }
+      /*
+      Log.writeln(" - releasing lock.");
+      Log.flush();*/
       releaseLock();
     }
   }
