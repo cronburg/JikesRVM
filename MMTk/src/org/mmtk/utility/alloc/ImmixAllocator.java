@@ -22,6 +22,7 @@ import static org.mmtk.policy.immix.ImmixConstants.*;
 
 import org.mmtk.utility.Log;
 import org.mmtk.utility.options.Options;
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.unboxed.*;
@@ -120,6 +121,9 @@ public class ImmixAllocator extends Allocator {
       else
         return allocSlowHot(bytes, align, offset);
     }
+    
+
+    VM.permcheck.a2b(cursor, end.diff(cursor).toInt(), Permcheck.Type.IMMIX_BLOCK, Permcheck.Type.FREE_CELL);
 
     /* sufficient memory is available, so we can finish performing the allocation */
     fillAlignmentGap(cursor, start);
@@ -150,6 +154,9 @@ public class ImmixAllocator extends Allocator {
       requestForLarge = false;
       return rtn;
     }
+    
+    // Mark the whole (alignment gap and allocated region) as a free cell:
+    VM.permcheck.a2b(largeCursor, end.diff(largeCursor).toInt(), Permcheck.Type.IMMIX_BLOCK, Permcheck.Type.FREE_CELL);
 
     /* sufficient memory is available, so we can finish performing the allocation */
     fillAlignmentGap(largeCursor, start);

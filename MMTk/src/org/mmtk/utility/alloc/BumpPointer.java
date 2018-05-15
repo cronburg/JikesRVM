@@ -244,7 +244,10 @@ import org.vmmagic.unboxed.Word;
     }
     while (bytes > 0) {
       int offset = start.diff(card).toInt();
+      //VM.permcheck.a2b(getCardMetaData(card), BYTES_IN_ADDRESS, Permcheck.Type.BUMP_POINTER_CARD_META, Permcheck.Type.BUMP_POINTER_CARD_META);
+      VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_CARD_META, true);
       getCardMetaData(card).store(offset);
+      VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_CARD_META, false);
       card = card.plus(1 << LOG_CARD_BYTES);
       bytes -= (1 << LOG_CARD_BYTES);
     }
@@ -292,6 +295,12 @@ import org.vmmagic.unboxed.Word;
 
     /* Check if we already have a block to use */
     if (allowScanning && !region.isZero()) {
+      //VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_NEXT_REGION);
+      
+      // Unchecked transition because if nextRegion was zero then this is the first time we got here.
+      VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_NEXT_REGION, false);
+      VM.permcheck.a2b(region.plus(DATA_END_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_DATA_END, false);
+      VM.permcheck.a2b(region.plus(REGION_LIMIT_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_REGION_LIMIT, false);
       Address nextRegion = getNextRegion(region);
       if (!nextRegion.isZero()) {
         return consumeNextRegion(nextRegion, bytes, align, offset);
@@ -306,6 +315,12 @@ import org.vmmagic.unboxed.Word;
     if (start.isZero()) return start; // failed allocation
     
     VM.permcheck.a2b(start, Conversions.pagesToBytes(Conversions.bytesToPages(blockSize)), Permcheck.Type.FREE_SPACE, Permcheck.Type.FREE_SPACE);
+    /*Log.write("start=", start);
+    Log.write(", bytes=", bytes);
+    Log.write(", limit=", limit);
+    Log.write(", internalLimit=", internalLimit);
+    Log.writeln(", cursor=", cursor);
+    Log.flush();*/
 
     if (!allowScanning) { // simple allocator
       if (start.NE(limit)) cursor = start;  // discontiguous
@@ -354,6 +369,9 @@ import org.vmmagic.unboxed.Word;
         int offset) {
     setNextRegion(region,cursor);
     region = nextRegion;
+    VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET),  BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_NEXT_REGION);
+    VM.permcheck.a2b(region.plus(DATA_END_OFFSET),     BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_DATA_END);
+    VM.permcheck.a2b(region.plus(REGION_LIMIT_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_REGION_LIMIT);
     cursor = getDataStart(nextRegion);
     updateLimit(getRegionLimit(nextRegion), nextRegion, bytes);
     setDataEnd(nextRegion,Address.zero());
@@ -388,7 +406,11 @@ import org.vmmagic.unboxed.Word;
   @Inline
   public static Address getNextRegion(Address region) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
+    // TODO: remove
+    VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.BUMP_POINTER_NEXT_REGION, Permcheck.Type.BUMP_POINTER_NEXT_REGION);
+    VM.permcheck.canRead(Permcheck.Type.BUMP_POINTER_NEXT_REGION, true);
     Address result = region.plus(NEXT_REGION_OFFSET).loadAddress();
+    VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_NEXT_REGION, false);
     return result;
   }
 
@@ -401,7 +423,11 @@ import org.vmmagic.unboxed.Word;
   public static void setNextRegion(Address region, Address nextRegion) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!nextRegion.EQ(Address.fromIntZeroExtend(0xdeadbeef)));
+    // TODO: remove
+    VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.BUMP_POINTER_NEXT_REGION, Permcheck.Type.BUMP_POINTER_NEXT_REGION);
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_NEXT_REGION, true);
     region.store(nextRegion,NEXT_REGION_OFFSET);
+    VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_NEXT_REGION, false);
   }
 
   /**
@@ -411,7 +437,9 @@ import org.vmmagic.unboxed.Word;
   @Inline
   public static void clearNextRegion(Address region) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_NEXT_REGION, true);
     region.store(Address.zero(),NEXT_REGION_OFFSET);
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_NEXT_REGION, false);
   }
 
   /**
@@ -421,7 +449,10 @@ import org.vmmagic.unboxed.Word;
   @Inline
   public static Address getDataEnd(Address region) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
-    return region.plus(DATA_END_OFFSET).loadAddress();
+    VM.permcheck.canRead(Permcheck.Type.BUMP_POINTER_DATA_END, true);
+    Address ret = region.plus(DATA_END_OFFSET).loadAddress();
+    VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_DATA_END, false);
+    return ret;
   }
 
   /**
@@ -430,7 +461,9 @@ import org.vmmagic.unboxed.Word;
    */
   public static void setDataEnd(Address region, Address endAddress) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_DATA_END, true);
     region.store(endAddress, DATA_END_OFFSET);
+    VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_DATA_END, false);
     if (VERBOSE) {
       Log.write("setDataEnd(");
       Log.write(region);
@@ -447,7 +480,10 @@ import org.vmmagic.unboxed.Word;
    */
   public static Address getRegionLimit(Address region) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
-    return region.plus(REGION_LIMIT_OFFSET).loadAddress();
+    VM.permcheck.canRead(Permcheck.Type.BUMP_POINTER_REGION_LIMIT, true);
+    Address ret = region.plus(REGION_LIMIT_OFFSET).loadAddress();
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_REGION_LIMIT, true);
+    return ret;
   }
 
   /**
@@ -458,7 +494,9 @@ import org.vmmagic.unboxed.Word;
    */
   public static void setRegionLimit(Address region, Address limit) {
     if (VM.VERIFY_ASSERTIONS) VM.assertions._assert(!region.isZero());
+    VM.permcheck.canWrite(Permcheck.Type.BUMP_POINTER_REGION_LIMIT, true);
     region.plus(REGION_LIMIT_OFFSET).store(limit);
+    VM.permcheck.canReadWrite(Permcheck.Type.BUMP_POINTER_REGION_LIMIT, false);
   }
 
   /**
@@ -514,6 +552,9 @@ import org.vmmagic.unboxed.Word;
       region = start;
       cursor = start.plus(DATA_START_OFFSET);
     }
+    //VM.permcheck.a2b(region.plus(NEXT_REGION_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_NEXT_REGION);
+    //VM.permcheck.a2b(region.plus(DATA_END_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_DATA_END);
+    //VM.permcheck.a2b(region.plus(REGION_LIMIT_OFFSET), BYTES_IN_ADDRESS, Permcheck.Type.FREE_SPACE, Permcheck.Type.BUMP_POINTER_REGION_LIMIT);
     updateLimit(start.plus(size), start, bytes);
     setRegionLimit(region,limit);
   }

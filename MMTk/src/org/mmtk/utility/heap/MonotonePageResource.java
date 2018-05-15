@@ -112,6 +112,11 @@ public final class MonotonePageResource extends PageResource {
       rtn += HeapLayout.vmMap.getAvailableDiscontiguousChunks() * VMLayoutConstants.PAGES_IN_CHUNK;
     return rtn;
   }
+  
+  @Inline
+  public Address getCursor() {
+    return cursor;
+  }
 
   /**
    * Allocate <code>pages</code> pages from this resource.  Simply
@@ -196,7 +201,7 @@ public final class MonotonePageResource extends PageResource {
         }
       }
       VM.events.tracePageAcquired(space, rtn, requiredPages);
-      VM.permcheck.a2b(rtn, bytes, Permcheck.Type.UNMAPPED, Permcheck.Type.PAGE);
+      VM.permcheck.a2b(rtn, bytes, Permcheck.UNMAPPED_OR_PAGE, Permcheck.Type.PAGE);
       VM.permcheck.a2b(rtn, bytes, Permcheck.Type.PAGE, Permcheck.Type.FREE_PAGE);
       return rtn;
     }
@@ -283,7 +288,7 @@ public final class MonotonePageResource extends PageResource {
   @Inline
   private void releasePages() {
     if (contiguous) {
-      VM.permcheck.a2b(currentChunk, cursor.diff(currentChunk).toWord().toExtent(), Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
+      VM.permcheck.a2b(start, cursor.diff(start).toWord().toExtent(), Permcheck.Type.FREE_PAGE, Permcheck.Type.PAGE);
       // TODO: We will perform unnecessary zeroing if the nursery size has decreased.
       if (zeroConcurrent) {
         // Wait for current zeroing to finish.
@@ -345,7 +350,7 @@ public final class MonotonePageResource extends PageResource {
     if (Options.protectOnRelease.getValue())
       HeapLayout.mmapper.protect(first, pages);
     //VM.permcheck.a2b(first, bytes, Permcheck.PAGE_OR_HIGHER, Permcheck.Type.FREE_PAGE);
-    VM.permcheck.a2b(first, bytes, Permcheck.PAGE_OR_HIGHER, Permcheck.Type.FREE_PAGE);
+    VM.permcheck.a2b(first, bytes, Permcheck.PAGE_OR_HIGHER, Permcheck.Type.PAGE);
     VM.events.tracePageReleased(space, first, pages);
   }
 

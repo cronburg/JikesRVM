@@ -19,7 +19,7 @@ import org.mmtk.utility.heap.*;
 import org.mmtk.utility.options.Options;
 import org.mmtk.utility.ForwardingWord;
 import org.mmtk.utility.Log;
-
+import org.mmtk.vm.Permcheck;
 import org.mmtk.vm.VM;
 
 import org.vmmagic.unboxed.*;
@@ -128,7 +128,10 @@ import org.vmmagic.pragma.*;
    * all pages associated with this (now empty) space.
    */
   public void release() {
-    ((MonotonePageResource) pr).reset();
+    MonotonePageResource mpr = (MonotonePageResource) pr;
+    VM.permcheck.a2b(start, mpr.getCursor().diff(start).toInt(), Permcheck.BUMP_POINTER_FREE_TYPES, Permcheck.Type.SPACE);
+    VM.permcheck.a2b(start, mpr.getCursor().diff(start).toInt(), Permcheck.Type.SPACE, Permcheck.Type.FREE_PAGE);
+    mpr.reset();
     headDiscontiguousRegion = Address.zero();
     fromSpace = false;
   }

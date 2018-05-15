@@ -109,7 +109,7 @@ public final class MiscHeader {
    * @param size the number of bytes allocated by the GC system for this object.
    * @param isScalar are we initializing a scalar (true) or array (false) object?
    */
-  @Interruptible("Only called during boot iamge creation")
+  @Interruptible("Only called during boot image creation")
   public static void initializeHeader(BootImageInterface bootImage, Address ref, TIB tib, int size,
                                       boolean isScalar) {
     /* Only perform initialization when it is required */

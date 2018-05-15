@@ -16,6 +16,7 @@ import static org.jikesrvm.objectmodel.JavaHeaderConstants.ADDRESS_BASED_HASHING
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.ARRAY_LENGTH_OFFSET;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.HASHCODE_BYTES;
 import static org.jikesrvm.objectmodel.JavaHeaderConstants.TIB_BYTES;
+import static org.jikesrvm.objectmodel.JavaHeaderConstants.ARRAY_LENGTH_BYTES;
 import static org.jikesrvm.runtime.JavaSizeConstants.BYTES_IN_INT;
 
 import org.jikesrvm.VM;
@@ -519,7 +520,10 @@ public class ObjectModel {
    * @return the length of an array
    */
   public static int getArrayLength(Object o) {
-    return Magic.getIntAtOffset(o, getArrayLengthOffset());
+    Permcheck.canRead(Permcheck.Type.ARRAY_LENGTH, true);
+    int ret = Magic.getIntAtOffset(o, getArrayLengthOffset());
+    Permcheck.canReadWrite(Permcheck.Type.ARRAY_LENGTH, false);
+    return ret;
   }
 
   /**
@@ -529,7 +533,10 @@ public class ObjectModel {
    * @param len the length of the array
    */
   public static void setArrayLength(Object o, int len) {
+    Permcheck.a2b(ObjectReference.fromObject(o).toAddress().plus(getArrayLengthOffset()), ARRAY_LENGTH_BYTES, Permcheck.Type.FREE_CELL, Permcheck.Type.ARRAY_LENGTH);
+    Permcheck.canWrite(Permcheck.Type.ARRAY_LENGTH, true);
     Magic.setIntAtOffset(o, getArrayLengthOffset(), len);
+    Permcheck.canWrite(Permcheck.Type.ARRAY_LENGTH, false);
   }
 
   @Interruptible

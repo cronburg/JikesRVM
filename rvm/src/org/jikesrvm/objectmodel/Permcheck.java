@@ -48,17 +48,22 @@ public class Permcheck {
     public static final byte ALLOCATOR = 0x11;
     public static final byte TIB_POINTER = 0x12;
     public static final byte ALIGNMENT_FILL = 0x13;
+    public static final byte ARRAY_LENGTH = 0x14;
+    public static final byte BUMP_POINTER_REGION_LIMIT = 0x15;
+    public static final byte BUMP_POINTER_NEXT_REGION = 0x16;
+    public static final byte BUMP_POINTER_DATA_END = 0x17;
+    public static final byte BUMP_POINTER_CARD_META = 0x18;
   }
   
   public class JavaType {
-    public static final byte BOOLEAN = 0x08;
-    public static final byte BYTE    = 0x09;
-    public static final byte CHAR    = 0x0a;
-    public static final byte SHORT   = 0x0b;
-    public static final byte INT     = 0x0c;
-    public static final byte LONG    = 0x0d;
-    public static final byte FLOAT   = 0x0e;
-    public static final byte DOUBLE  = 0x0f;
+    public static final byte BOOLEAN = (byte) 0xf8;
+    public static final byte BYTE    = (byte) 0xf9;
+    public static final byte CHAR    = (byte) 0xfa;
+    public static final byte SHORT   = (byte) 0xfb;
+    public static final byte INT     = (byte) 0xfc;
+    public static final byte LONG    = (byte) 0xfd;
+    public static final byte FLOAT   = (byte) 0xfe;
+    public static final byte DOUBLE  = (byte) 0xff;
   }
   
   private static void writeType(byte type) {
@@ -82,6 +87,19 @@ public class Permcheck {
       case Type.IMMIX_BLOCK: Log.write("IMMIX_BLOCK"); break;
       case Type.TIB_POINTER: Log.write("TIB_POINTER"); break;
       case Type.ALIGNMENT_FILL: Log.write("ALIGNMENT_FILL"); break;
+      case Type.ARRAY_LENGTH: Log.write("ARRAY_LENGTH"); break;
+      case Type.BUMP_POINTER_NEXT_REGION: Log.write("BUMP_POINTER_NEXT_REGION"); break;
+      case Type.BUMP_POINTER_DATA_END: Log.write("BUMP_POINTER_DATA_END"); break;
+      case Type.BUMP_POINTER_REGION_LIMIT: Log.write("BUMP_POINTER_REGION_LIMIT"); break;
+      case Type.BUMP_POINTER_CARD_META: Log.write("BUMP_POINTER_CARD_META"); break;
+      case JavaType.BOOLEAN: Log.write("BOOLEAN"); break;
+      case JavaType.BYTE: Log.write("BYTE"); break;
+      case JavaType.CHAR: Log.write("CHAR"); break;
+      case JavaType.SHORT: Log.write("SHORT"); break;
+      case JavaType.INT: Log.write("INT"); break;
+      case JavaType.LONG: Log.write("LONG"); break;
+      case JavaType.FLOAT: Log.write("FLOAT"); break;
+      case JavaType.DOUBLE: Log.write("DOUBLE"); break;
     	default: Log.write(type);
     }
   }
@@ -192,7 +210,7 @@ public class Permcheck {
     
     spaceInfo(addr);
     
-    writeSurroundingPage(addr, extent, i);
+    writeSurroundingPage(addr, extent > 1024 ? 1024 : extent, i);
     
     Log.flush();
     error = true;
@@ -253,14 +271,14 @@ public class Permcheck {
           if (currType != Type.UNMAPPED) {
             if (expectedCurrTypes == null) {
               if (currType != expectedCurrType) {
-                writeBad(addr, expectedCurrType, newType, currType, i, extent);
+                writeBad(addr.plus(i), expectedCurrType, newType, currType, i, extent);
               }
             } else {
               for (int j = 0; j < expectedCurrTypes.length; j++) {
                 if (currType == expectedCurrTypes[j]) break;
                 if (j == expectedCurrTypes.length - 1) {
                   //Log.write("UhOh]"); writeType(currType); Log.writeln("=", currType);
-                  writeBad(addr, expectedCurrTypes, newType, currType, i, j, extent);
+                  writeBad(addr.plus(i), expectedCurrTypes, newType, currType, i, j, extent);
                 }
               }
             }

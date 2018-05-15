@@ -569,6 +569,7 @@ public final class MemoryManager {
     Selected.Mutator mutator = Selected.Mutator.get();
     allocator = mutator.checkAllocator(org.jikesrvm.runtime.Memory.alignUp(size, MIN_ALIGNMENT), align, allocator);
     Address region = allocateSpace(mutator, size, align, offset, allocator, site);
+    Permcheck.a2b(region, size, Permcheck.Type.FREE_CELL, Permcheck.Type.CELL);
     Object result = ObjectModel.initializeArray(region, tib, numElements, size);
     mutator.postAlloc(ObjectReference.fromObject(result), ObjectReference.fromObject(tib), size, allocator);
     return result;

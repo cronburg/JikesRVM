@@ -39,12 +39,23 @@ public abstract class Permcheck {
     public static final byte ALLOCATOR = 0x11;
     public static final byte TIB_POINTER = 0x12;
     public static final byte ALIGNMENT_FILL = 0x13;
+    public static final byte ARRAY_LENGTH = 0x14;
+    public static final byte BUMP_POINTER_REGION_LIMIT = 0x15;
+    public static final byte BUMP_POINTER_NEXT_REGION = 0x16;
+    public static final byte BUMP_POINTER_DATA_END = 0x17;
+    public static final byte BUMP_POINTER_CARD_META = 0x18;
   }
   public static final byte[] BLOCK_OR_HIGHER = {Type.BLOCK, Type.STATUS_WORD, Type.CELL};
   public static final byte[] PAGE_OR_LOWER = {Type.PAGE, Type.UNMAPPED, Type.FREE_PAGE};
   public static final byte[] PAGE_OR_HIGHER =
     { Type.PAGE, Type.SPACE, Type.BLOCK, Type.CELL, Type.STATUS_WORD, Type.BLOCK_META
     , Type.FREE_PAGE, Type.FREE_CELL, Type.FREE_CELL_NEXT_POINTER, Type.LARGE_OBJECT_SPACE, Type.LARGE_OBJECT_HEADER};
+  public static final byte[] BUMP_POINTER_FREE_TYPES =
+    { Type.ALIGNMENT_FILL, Type.ARRAY_LENGTH, Type.TIB_POINTER, Type.STATUS_WORD, Type.FREE_CELL
+    , Type.BUMP_POINTER_NEXT_REGION, Type.BUMP_POINTER_DATA_END, Type.BUMP_POINTER_REGION_LIMIT
+    , Type.FREE_SPACE };
+  public static final byte[] UNMAPPED_OR_PAGE =
+    { Type.UNMAPPED, Type.PAGE };
   public abstract void a2b(Address addr, int extent, byte expectedCurrType, byte newType);
   public abstract void freeCell(ObjectReference object);
   public abstract void freeCell(Address addr);
