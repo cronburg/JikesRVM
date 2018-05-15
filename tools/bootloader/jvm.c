@@ -390,11 +390,17 @@ int createVM(int vmInSeparateThread)
     return 1;
 
   // [karl]
+  fprintf(stderr, "pre-init_chisel: %p, %p, %p\n", bootDataRegion, bootCodeRegion, bootRMapRegion); fflush(stderr);
+  volatile int x = *((volatile int*)0x60000000);
+  *((volatile int*)0x60000000) = x;
+  fprintf(stderr, "pre-init_chisel2\n"); fflush(stderr);
   init_chisel(NULL);
 
   /* validate contents of boot record */
   bootRecord = (struct BootRecord *) bootDataRegion;
 
+  fprintf(stderr, "bootDataRegion=%p\n", bootDataRegion); fflush(stderr);
+  fprintf(stderr, "bootRecord->bootImageDataStart=%p\n", bootRecord->bootImageDataStart); fflush(stderr);
   if (bootRecord->bootImageDataStart != (Address) bootDataRegion) {
     ERROR_PRINTF("%s: image load error: built for %p but loaded at %p\n",
      Me, (void *)bootRecord->bootImageDataStart, bootDataRegion);
